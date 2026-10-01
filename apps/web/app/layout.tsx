@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Script from 'next/script'
 import { Sidebar } from '@/components/layout/sidebar'
 import { CommandPalette } from '@/components/ui/command-palette'
 import { MainContent } from '@/components/layout/main-content'
@@ -45,10 +44,11 @@ export default async function RootLayout({
   ])
 
   return (
-    <html lang="pt-BR">
-      <Script id="theme-init" strategy="beforeInteractive">{`
-        (function(){var t=localStorage.getItem('theme');if(t==='light')document.documentElement.setAttribute('data-theme','light')})()
-      `}</Script>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <head>
+        {/* Applies the saved theme before paint, so a light-theme user never sees a dark flash. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('theme')==='light')document.documentElement.setAttribute('data-theme','light')}catch(e){}" }} />
+      </head>
       <body>
         <NextTopLoader color="var(--accent)" showSpinner={false} height={2} />
         <RoleProvider role={user?.role ?? 'viewer'}>
