@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AlertCircle, ArrowBigUp, Eye, EyeOff, Loader2 } from 'lucide-react'
 import { LoginParticles } from './login-particles'
 import { LoginMesh } from './login-mesh'
@@ -24,7 +24,9 @@ const input: React.CSSProperties = {
 const required = <span aria-hidden style={{ color: '#db2828', marginLeft: 3 }}>*</span>
 
 export function SignInClient({ next }: { next: string }) {
-  const [variant] = useState(() => Math.random() < 0.5 ? 'particles' : 'mesh')
+  // Background picked after mount: a random pick during render differs between server and client.
+  const [variant, setVariant] = useState<'particles' | 'mesh' | null>(null)
+  useEffect(() => { setVariant(Math.random() < 0.5 ? 'particles' : 'mesh') }, [])
   const [error, setError] = useState('')
   const [pending, setPending] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
@@ -59,7 +61,7 @@ export function SignInClient({ next }: { next: string }) {
         backgroundColor: '#070712', gap: 24, padding: '32px 16px', position: 'relative',
       }}
     >
-      {variant === 'particles' ? <LoginParticles /> : <LoginMesh />}
+      {variant === 'particles' ? <LoginParticles /> : variant === 'mesh' ? <LoginMesh /> : null}
       <style>{`
         .login-input:focus { outline: none; border-color: ${C.primary} !important; box-shadow: 0 0 0 3px rgba(65,131,196,.25); }
         .login-submit:hover:not(:disabled) { background: ${C.primaryHover} !important; }
