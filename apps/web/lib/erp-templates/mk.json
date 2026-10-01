@@ -1,0 +1,445 @@
+{
+  "slug": "mk",
+  "name": "MKSolutions",
+  "description": "MK Solutions: token obtido no WSAutenticacao (sys, token, senha e serviço).",
+  "detect": [
+    "/mk/?$",
+    "mk-?solutions"
+  ],
+  "baseUrlExample": "https://mk.seuprovedor.com.br/mk",
+  "credentialHints": {
+    "SYS": "Código do sistema, ex.: MK0.",
+    "TOKEN": "Chave de acesso do usuário de integração no MK.",
+    "PASSWORD": "Senha desse usuário.",
+    "SERVICE": "Código do serviço liberado para a integração."
+  },
+  "probeEndpoint": null,
+  "firstCall": "cliente_por_cpf_cnpj",
+  "authModes": [
+    {
+      "id": "default",
+      "type": "token_endpoint",
+      "label": "Autenticação MK",
+      "fields": [
+        {
+          "key": "SYS",
+          "label": "Sistema (SYS)",
+          "placeholder": ""
+        },
+        {
+          "key": "TOKEN",
+          "label": "Token de acesso",
+          "placeholder": ""
+        },
+        {
+          "key": "PASSWORD",
+          "label": "Senha",
+          "placeholder": ""
+        },
+        {
+          "key": "SERVICE",
+          "label": "Código do serviço",
+          "placeholder": ""
+        }
+      ],
+      "tokenPath": "Token",
+      "tokenEndpoint": "obter_token"
+    }
+  ],
+  "endpoints": [
+    {
+      "key": "cliente_por_cpf_cnpj",
+      "name": "Cliente por CPF/CNPJ",
+      "method": "GET",
+      "pathTemplate": "/WSMKConsultaDoc.rule?sys={SYS}&token={TOKEN}&doc={cpfcnpj}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Cliente",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "clientes_por_faixa_de_codigo",
+      "name": "Clientes por faixa de código",
+      "method": "GET",
+      "pathTemplate": "/WSMKConsultaClientes.rule?sys={SYS}&token={TOKEN}&cd_cliente_inicio={cd_cliente_inicio}&cd_cliente_fim={cd_cliente_fim}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Cliente",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "contratos_do_cliente",
+      "name": "Contratos do cliente",
+      "method": "GET",
+      "pathTemplate": "/WSMKContratosPorCliente.rule?sys={SYS}&token={TOKEN}&cd_cliente={cliente_id}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Contrato",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "faturas_pendentes",
+      "name": "Faturas pendentes",
+      "method": "GET",
+      "pathTemplate": "/WSMKFaturasPendentes.rule?sys={SYS}&token={TOKEN}&cd_cliente={cliente_id}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Financeiro",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "pix_copia_e_cola",
+      "name": "PIX copia e cola",
+      "method": "POST",
+      "pathTemplate": "/WSMKRetornarCopieColaPix.rule",
+      "bodyTemplate": "sys={SYS}&token={TOKEN}&CodigoFatura={fatura_id}",
+      "headers": "{ \"Content-Type\": \"application/x-www-form-urlencoded\" }",
+      "group": "Financeiro",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "desbloqueio_de_confianca",
+      "name": "Desbloqueio de confiança",
+      "method": "GET",
+      "pathTemplate": "/WSMKAutoDesbloqueio.rule?sys={SYS}&token={TOKEN}&cd_conexao={conexao_id}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Conexão",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "conexoes_do_cliente",
+      "name": "Conexões do cliente",
+      "method": "GET",
+      "pathTemplate": "/WSMKConexoesPorCliente.rule?sys={SYS}&token={TOKEN}&cd_cliente={cliente_id}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Conexão",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "obter_token",
+      "name": "Obter token",
+      "method": "GET",
+      "pathTemplate": "/WSAutenticacao.rule?sys={SYS}&token={TOKEN}&password={PASSWORD}&cd_servico={SERVICE}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Autenticação",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "listar_processos",
+      "name": "Listar processos",
+      "method": "GET",
+      "pathTemplate": "/WSMKListaProcessos.rule?sys={SYS}&token={TOKEN}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Lista todos os processos disponíveis para abertura de atendimento",
+      "authMode": ""
+    },
+    {
+      "key": "listar_classificacoes_de_atendimento",
+      "name": "Listar classificações de atendimento",
+      "method": "GET",
+      "pathTemplate": "/WSMKListaClassificacoesAte.rule?sys={SYS}&token={TOKEN}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Lista todas as classificações disponíveis para atendimento",
+      "authMode": ""
+    },
+    {
+      "key": "abrir_atendimento",
+      "name": "Abrir atendimento",
+      "method": "GET",
+      "pathTemplate": "/WSMKNovoAtendimento.rule?sys={SYS}&token={TOKEN}&cd_cliente={cliente_id}&cd_processo={cd_processo}&cd_classificacao_ate={cd_classificacao_ate}&origem_contato={origem_contato}&info={info}&cd_contrato={contrato_id}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "Registra um novo atendimento. origem_contato: 9=Outros",
+      "authMode": ""
+    },
+    {
+      "key": "listar_tipos_de_os",
+      "name": "Listar tipos de OS",
+      "method": "GET",
+      "pathTemplate": "/WSMKOSListaTiposOS.rule?sys={SYS}&token={TOKEN}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Lista todos os tipos de OS disponíveis",
+      "authMode": ""
+    },
+    {
+      "key": "listar_tecnicos",
+      "name": "Listar técnicos",
+      "method": "GET",
+      "pathTemplate": "/WSMKOSListaTecnicoResponsavel.rule?sys={SYS}&token={TOKEN}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Lista técnicos disponíveis para atribuir à OS",
+      "authMode": ""
+    },
+    {
+      "key": "abrir_os",
+      "name": "Abrir OS",
+      "method": "GET",
+      "pathTemplate": "/WSMKCriarOrdemServico.rule?sys={SYS}&token={TOKEN}&categoria={categoria}&CodigoCliente={cliente_id}&CodigoConexao={conexao_id}&CodigoContrato={contrato_id}&DescricaoProblema={DescricaoProblema}&CodigoTipoOS={CodigoTipoOS}&CodigoTecnico={CodigoTecnico}&CodigoGrupoServico={CodigoGrupoServico}&dataConnection={dataConnection}&CodigoAtendimento={CodigoAtendimento}",
+      "bodyTemplate": "",
+      "headers": "{}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "Cria uma nova ordem de serviço",
+      "authMode": ""
+    }
+  ],
+  "fieldSchemas": [
+    {
+      "fieldName": "nome",
+      "label": "Nome",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "Nome",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "login",
+      "label": "Login",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cliente_id",
+      "responsePath": "Conexoes[0].username",
+      "defaultValue": "",
+      "source": "conexoes_do_cliente"
+    },
+    {
+      "fieldName": "email",
+      "label": "Email",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "Email",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "cpfcnpj",
+      "label": "CPF / CNPJ",
+      "fieldType": "text",
+      "required": true,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "cliente_id",
+      "label": "Código do cliente",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "CodigoPessoa",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "conexao_id",
+      "label": "ID da conexão",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cliente_id",
+      "responsePath": "Conexoes[0].codconexao",
+      "defaultValue": "",
+      "source": "conexoes_do_cliente"
+    },
+    {
+      "fieldName": "contrato_id",
+      "label": "Código do contrato",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cliente_id",
+      "responsePath": "ContratosAtivos[0].codcontrato",
+      "defaultValue": "",
+      "source": "contratos_do_cliente"
+    },
+    {
+      "fieldName": "cd_processo",
+      "label": "Código do processo",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "cd_classificacao_ate",
+      "label": "Classificação do atendimento",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "origem_contato",
+      "label": "Origem do contato",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "info",
+      "label": "Informação",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "categoria",
+      "label": "Categoria OS",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "DescricaoProblema",
+      "label": "Descrição do problema",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "CodigoTipoOS",
+      "label": "Código tipo OS",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "CodigoTecnico",
+      "label": "Código técnico",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "CodigoGrupoServico",
+      "label": "Código grupo serviço",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "dataConnection",
+      "label": "Data Connection",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "CodigoAtendimento",
+      "label": "Código atendimento",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "cd_cliente_inicio",
+      "label": "Código de cliente inicial",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "1",
+      "source": null
+    },
+    {
+      "fieldName": "cd_cliente_fim",
+      "label": "Código de cliente final",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "50",
+      "source": null
+    },
+    {
+      "fieldName": "fatura_id",
+      "label": "ID da fatura",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cliente_id",
+      "responsePath": "FaturasPendentes[0].codfatura",
+      "defaultValue": "",
+      "source": "faturas_pendentes"
+    }
+  ]
+}

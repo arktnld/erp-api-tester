@@ -1,0 +1,269 @@
+{
+  "slug": "hubsoft",
+  "name": "Hubsoft",
+  "description": "Hubsoft: OAuth (client id/secret + usuário e senha), token renovado sozinho.",
+  "detect": [
+    "hubsoft\\.com\\.br"
+  ],
+  "baseUrlExample": "https://api.seuprovedor.hubsoft.com.br",
+  "credentialHints": {
+    "CLIENT_ID": "Hubsoft → Configurações → Integrações (API).",
+    "CLIENT_SECRET": "Gerado junto com o client id.",
+    "USERNAME": "Usuário de integração do Hubsoft.",
+    "PASSWORD": "Senha desse usuário."
+  },
+  "probeEndpoint": null,
+  "firstCall": "cliente_por_cpf_cnpj",
+  "authModes": [
+    {
+      "id": "default",
+      "type": "token_endpoint",
+      "label": "Autenticação Hubsoft",
+      "fields": [
+        {
+          "key": "CLIENT_ID",
+          "label": "Client ID",
+          "placeholder": ""
+        },
+        {
+          "key": "CLIENT_SECRET",
+          "label": "Client Secret",
+          "placeholder": ""
+        },
+        {
+          "key": "USERNAME",
+          "label": "Usuario",
+          "placeholder": ""
+        },
+        {
+          "key": "PASSWORD",
+          "label": "Senha",
+          "placeholder": ""
+        }
+      ],
+      "tokenPath": "access_token",
+      "tokenEndpoint": "obter_token"
+    }
+  ],
+  "endpoints": [
+    {
+      "key": "obter_token",
+      "name": "Obter token",
+      "method": "POST",
+      "pathTemplate": "/oauth/token",
+      "bodyTemplate": "{\"grant_type\": \"password\", \"client_id\": \"{CLIENT_ID}\", \"client_secret\": \"{CLIENT_SECRET}\", \"username\": \"{USERNAME}\", \"password\": \"{PASSWORD}\"}",
+      "headers": "{\"Content-Type\": \"application/json\"}",
+      "group": "Autenticação",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "cliente_por_cpf_cnpj",
+      "name": "Cliente por CPF/CNPJ",
+      "method": "GET",
+      "pathTemplate": "/api/v1/integracao/cliente?busca=cpf_cnpj&termo_busca={cpfcnpj}&incluir_contrato=sim",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\": \"Bearer {token}\"}",
+      "group": "Cliente",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "listar_clientes",
+      "name": "Listar clientes",
+      "method": "GET",
+      "pathTemplate": "/api/v1/integracao/cliente/todos?pagina=0&itens_por_pagina=500&cancelado=sim",
+      "bodyTemplate": "",
+      "headers": "{\n  \"Authorization\": \"Bearer {token}\"\n}",
+      "group": "Cliente",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "listar_faturas",
+      "name": "Listar faturas",
+      "method": "GET",
+      "pathTemplate": "/api/v1/integracao/financeiro/fatura?pagina=0&itens_por_pagina=500&tipo_data=data_vencimento&tipo_resultado=detalhado&data_inicio=2023-01-01",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\": \"Bearer {token}\"}",
+      "group": "Financeiro",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "desbloqueio_de_confianca",
+      "name": "Desbloqueio de confiança",
+      "method": "POST",
+      "pathTemplate": "/api/v1/integracao/cliente/desbloqueio_confianca",
+      "bodyTemplate": "{\"id_cliente_servico\": {cliente_servico_id}, \"dias_desbloqueio\": \"1\"}",
+      "headers": "{\"Authorization\": \"Bearer {token}\", \"Content-Type\": \"application/json\"}",
+      "group": "Conexão",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "reiniciar_cpe",
+      "name": "Reiniciar CPE",
+      "method": "POST",
+      "pathTemplate": "/api/v1/integracao/rede/reiniciar_cpe/{serial_cpe}",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\": \"Bearer {token}\"}",
+      "group": "Equipamento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "trocar_wi_fi_rede_e_senha",
+      "name": "Trocar Wi-Fi (rede e senha)",
+      "method": "POST",
+      "pathTemplate": "/api/v1/integracao/rede/cpe/gerenciar",
+      "bodyTemplate": "{\"id_cpe\": \"{id_cpe}\", \"parametros\": [{\"prefixo\": \"wifi_ssid\", \"valor\": \"{wifi_ssid}\"}, {\"prefixo\": \"wifi_password\", \"valor\": \"{wifi_password}\"}]}",
+      "headers": "{\"Authorization\": \"Bearer {token}\", \"Content-Type\": \"application/json\"}",
+      "group": "Equipamento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "abrir_atendimento",
+      "name": "Abrir atendimento",
+      "method": "POST",
+      "pathTemplate": "/api/v1/integracao/atendimento",
+      "bodyTemplate": "{\"id_cliente_servico\": \"{cliente_servico_id}\", \"descricao\": \"{descricao}\", \"nome\": \"{nome}\", \"telefone\": \"{telefone}\"}",
+      "headers": "{\"Authorization\": \"Bearer {token}\", \"Content-Type\": \"application/json\"}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "iniciar_gerenciamento_da_cpe",
+      "name": "Iniciar gerenciamento da CPE",
+      "method": "GET",
+      "pathTemplate": "/api/v1/integracao/rede/cpe/iniciar_gerenciamento?phy_addr={serial_cpe}",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\": \"Bearer {token}\"}",
+      "group": "Equipamento",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Devolve cpe.id_cpe e os parâmetros atuais da CPE. Os prefixos de Wi-Fi variam por modelo (wifi_password, wifi_password_5ghz…).",
+      "authMode": ""
+    }
+  ],
+  "fieldSchemas": [
+    {
+      "fieldName": "cpfcnpj",
+      "label": "CPF / CNPJ",
+      "fieldType": "text",
+      "required": true,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "nome",
+      "label": "Nome",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "clientes[0].nome_razaosocial",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "cliente_id",
+      "label": "ID Cliente",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "clientes[0].id_cliente",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "cliente_servico_id",
+      "label": "ID Cliente Serviço",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "clientes[0].servicos[0].id_cliente_servico",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "serial_cpe",
+      "label": "Serial CPE (MAC)",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "clientes[0].servicos[0].phy_addr",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "wifi_ssid",
+      "label": "Nome da rede Wi-Fi (teste)",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "ERP-TESTER",
+      "source": null
+    },
+    {
+      "fieldName": "wifi_password",
+      "label": "Senha Wi-Fi (teste)",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "Teste@12345",
+      "source": null
+    },
+    {
+      "fieldName": "descricao",
+      "label": "Descrição do atendimento",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "Atendimento de teste (ERP Tester)",
+      "source": null
+    },
+    {
+      "fieldName": "telefone",
+      "label": "Telefone de contato",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "11999999999",
+      "source": null
+    },
+    {
+      "fieldName": "id_cpe",
+      "label": "ID da CPE",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "serial_cpe",
+      "responsePath": "cpe.id_cpe",
+      "defaultValue": "",
+      "source": "iniciar_gerenciamento_da_cpe"
+    }
+  ]
+}

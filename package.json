@@ -1,0 +1,24 @@
+{
+  "name": "erp-api-tester",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --filter web dev",
+    "build": "pnpm --filter db build && pnpm --filter web build",
+    "start": "pnpm --filter web start",
+    "db:generate": "pnpm --filter db generate",
+    "db:migrate": "pnpm --filter db migrate"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "esbuild",
+      "prisma",
+      "sharp",
+      "protobufjs"
+    ]
+  }
+}

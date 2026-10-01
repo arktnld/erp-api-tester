@@ -1,0 +1,278 @@
+{
+  "slug": "voalle",
+  "name": "Voalle",
+  "description": "Voalle (syngw): token OAuth na porta 45700 e API na 45715.",
+  "detect": [
+    ":4570\\d",
+    "/external/integrations",
+    "voalle"
+  ],
+  "baseUrlExample": "https://erp.seuprovedor.com.br",
+  "credentialHints": {
+    "CLIENT_ID": "Suíte → Configurações → Usuários → usuário Integrador (campo Client Id).",
+    "CLIENT_SECRET": "Mesmo usuário Integrador (campo Client Secret).",
+    "SYNDATA": "Token do ambiente: Suíte → Configurações → Parâmetros.",
+    "USERNAME": "Usuário (só no modo senha).",
+    "PASSWORD": "Senha (só no modo senha)."
+  },
+  "probeEndpoint": null,
+  "firstCall": "cliente_por_cpf_cnpj",
+  "authModes": [
+    {
+      "id": "client_credentials",
+      "type": "token_endpoint",
+      "label": "OAuth2 client_credentials",
+      "fields": [
+        {
+          "key": "CLIENT_ID",
+          "label": "Client ID",
+          "placeholder": ""
+        },
+        {
+          "key": "CLIENT_SECRET",
+          "label": "Client Secret",
+          "placeholder": ""
+        },
+        {
+          "key": "SYNDATA",
+          "label": "Syndata",
+          "placeholder": ""
+        }
+      ],
+      "tokenPath": "access_token",
+      "tokenEndpoint": "obter_token_client_credentials"
+    },
+    {
+      "id": "password",
+      "type": "token_endpoint",
+      "label": "OAuth2 password (legado)",
+      "fields": [
+        {
+          "key": "CLIENT_ID",
+          "label": "Client ID",
+          "default": "synauth",
+          "placeholder": ""
+        },
+        {
+          "key": "CLIENT_SECRET",
+          "label": "Client Secret",
+          "placeholder": ""
+        },
+        {
+          "key": "USERNAME",
+          "label": "Usuário",
+          "placeholder": ""
+        },
+        {
+          "key": "PASSWORD",
+          "label": "Senha",
+          "placeholder": ""
+        },
+        {
+          "key": "SYNDATA",
+          "label": "Syndata",
+          "placeholder": ""
+        }
+      ],
+      "tokenPath": "access_token",
+      "tokenEndpoint": "obter_token_password"
+    }
+  ],
+  "endpoints": [
+    {
+      "key": "obter_token_client_credentials",
+      "name": "Obter token (client_credentials)",
+      "method": "POST",
+      "pathTemplate": ":45700/connect/token",
+      "bodyTemplate": "grant_type=client_credentials&scope=syngw&client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}&syndata={SYNDATA}",
+      "headers": "{\"Content-Type\":\"application/x-www-form-urlencoded\"}",
+      "group": "Autenticação",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Fluxo mais comum (client_credentials). Retorna access_token (Bearer).",
+      "authMode": ""
+    },
+    {
+      "key": "obter_token_password",
+      "name": "Obter token (password)",
+      "method": "POST",
+      "pathTemplate": ":45700/connect/token",
+      "bodyTemplate": "grant_type=password&scope=syngw+synpaygw+offline_access&client_id={CLIENT_ID}&client_secret={CLIENT_SECRET}&username={USERNAME}&password={PASSWORD}&syndata={SYNDATA}",
+      "headers": "{\"Content-Type\":\"application/x-www-form-urlencoded\"}",
+      "group": "Autenticação",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Fluxo legado (grant password). client_id costuma ser \"synauth\".",
+      "authMode": ""
+    },
+    {
+      "key": "listar_clientes",
+      "name": "Listar clientes",
+      "method": "GET",
+      "pathTemplate": ":45715/external/integrations/thirdparty/getclient?page=1&pageSize=100",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Cliente",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Listagem paginada. Retorna data[]: id, name, cpf_cnpj, status, email, phone.",
+      "authMode": ""
+    },
+    {
+      "key": "contratos_do_cliente",
+      "name": "Contratos do cliente",
+      "method": "POST",
+      "pathTemplate": ":45715/external/integrations/thirdparty/contract/getpaged",
+      "bodyTemplate": "{\n  \"txId\": \"{cpfcnpj}\"\n}",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Contrato",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Contratos do CPF/CNPJ (só txId no body). Resposta: response.data[] (id, contractNumber, status).",
+      "authMode": ""
+    },
+    {
+      "key": "cliente_por_cpf_cnpj",
+      "name": "Cliente por CPF/CNPJ",
+      "method": "GET",
+      "pathTemplate": ":45715/external/integrations/thirdparty/people/txid/{cpfcnpj}",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Cliente",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "",
+      "authMode": ""
+    },
+    {
+      "key": "campanhas_e_listas_de_preco",
+      "name": "Campanhas e listas de preço",
+      "method": "GET",
+      "pathTemplate": ":45715/external/integrations/thirdparty/crm/campaignsandpricelistservices",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\":\"Bearer {token}\"}",
+      "group": "Contrato",
+      "requiresClient": false,
+      "isModification": false,
+      "notes": "Campanhas, regiões, cidades e listas de preço.",
+      "authMode": ""
+    },
+    {
+      "key": "titulos_do_cliente",
+      "name": "Títulos do cliente",
+      "method": "GET",
+      "pathTemplate": ":45715/external/integrations/thirdparty/gettitlesbytxid/{cpfcnpj}",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Financeiro",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Evite mais de 5 chamadas simultâneas.",
+      "authMode": ""
+    },
+    {
+      "key": "boleto_2_via",
+      "name": "Boleto (2ª via)",
+      "method": "GET",
+      "pathTemplate": ":45715/external/integrations/thirdparty/GetBillet/{titulo_id}",
+      "bodyTemplate": "",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Financeiro",
+      "requiresClient": true,
+      "isModification": false,
+      "notes": "Retorna linha digitável / PIX / URL do boleto.",
+      "authMode": ""
+    },
+    {
+      "key": "desbloqueio_de_confianca",
+      "name": "Desbloqueio de confiança",
+      "method": "POST",
+      "pathTemplate": ":45715/external/integrations/thirdparty/contracts/unlock/{contrato_id}",
+      "bodyTemplate": "{}",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Conexão",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "Desbloqueio em confiança. Payload exato a confirmar com o fornecedor.",
+      "authMode": ""
+    },
+    {
+      "key": "adicionar_relato_em_os",
+      "name": "Adicionar relato em OS",
+      "method": "POST",
+      "pathTemplate": ":45715/external/integrations/thirdparty/projects/createsolicitationreport",
+      "bodyTemplate": "{\n  \"assignmentId\": 0,\n  \"protocol\": 0,\n  \"incidentStatusId\": 0,\n  \"description\": \"Relato do atendimento\",\n  \"progress\": 0,\n  \"priority\": 0,\n  \"notificationTarget\": 0,\n  \"privateReport\": true\n}",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "Adiciona relato e altera status de uma OS existente (assignmentId/protocol).",
+      "authMode": ""
+    },
+    {
+      "key": "abrir_os",
+      "name": "Abrir OS",
+      "method": "POST",
+      "pathTemplate": ":45715/external/integrations/thirdparty/opendetailedsolicitation",
+      "bodyTemplate": "{\n  \"incidentStatusId\": 1,\n  \"personId\": 123,\n  \"clientId\": 0,\n  \"incidentTypeId\": 112,\n  \"catalogServiceId\": 2,\n  \"serviceLevelAgreementId\": 123,\n  \"matrixType\": 2,\n  \"teamCode\": \"0123\"\n}",
+      "headers": "{\"Authorization\":\"Bearer {token}\",\"Content-Type\":\"application/json\"}",
+      "group": "Atendimento",
+      "requiresClient": true,
+      "isModification": true,
+      "notes": "Abre nova solicitação. Retorna protocol + assignmentId.",
+      "authMode": ""
+    }
+  ],
+  "fieldSchemas": [
+    {
+      "fieldName": "cpfcnpj",
+      "label": "CPF/CNPJ",
+      "fieldType": "text",
+      "required": true,
+      "endpointParam": "",
+      "responsePath": "",
+      "defaultValue": "",
+      "source": null
+    },
+    {
+      "fieldName": "nome",
+      "label": "Nome",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "response.name",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "cliente_id",
+      "label": "ID do Cliente",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "response.id",
+      "defaultValue": "",
+      "source": "cliente_por_cpf_cnpj"
+    },
+    {
+      "fieldName": "contrato_id",
+      "label": "ID do Contrato",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "response.data[0].id",
+      "defaultValue": "",
+      "source": "contratos_do_cliente"
+    },
+    {
+      "fieldName": "titulo_id",
+      "label": "ID do Título",
+      "fieldType": "text",
+      "required": false,
+      "endpointParam": "cpfcnpj",
+      "responsePath": "response[0].id",
+      "defaultValue": "",
+      "source": "titulos_do_cliente"
+    }
+  ]
+}

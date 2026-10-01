@@ -1,0 +1,17 @@
+node_modules/
+packages/db/src/generated/
+.next/
+dist/
+*.db
+*.db-journal
+.env
+.env.*
+!.env.example
+data/
+.motia/
+.pnpm-store/
+tsconfig.tsbuildinfo
+.worktrees/
+
+# alvo de deploy desta máquina (scripts/deploy.sh)
+scripts/deploy.local

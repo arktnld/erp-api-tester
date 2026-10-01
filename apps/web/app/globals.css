@@ -1,0 +1,239 @@
+@import "tailwindcss";
+
+/* Palette follows Gitea's themes (web_src/css/themes/theme-gitea-{dark,light}.css).
+   Dark is the default; [data-theme="light"] switches. */
+:root {
+  /* Surfaces: body, box body, box header / hover, chip / active */
+  --background: #1e1f20;
+  --surface: #161718;
+  --surface-2: #1b1c1e;
+  --surface-3: #2e3033;
+  --border: #3f4248;
+  --border-2: #4f5259;
+  --input-bg: #191a1c;
+  --input-border: #46494f;
+  --nav-bg: #18191b;
+
+  /* Text */
+  --text: #d2d4d8;
+  --text-strong: #e4e6ea;
+  --text-muted: #969aa1;
+  --text-subtle: #80858f;
+
+  /* Primary */
+  --accent: #4183c4;
+  --accent-hover: #548fca;
+  --accent-soft: #4183c426;
+  --link: #6aa3db;
+
+  /* HTTP Methods */
+  --method-get: #87ab63;
+  --method-post: #b259d0;
+  --method-put: #d4a117;
+  --method-patch: #969aa1;
+  --method-delete: #d95c5c;
+
+  /* Status (text/icon colors; labels use them with a tinted background) */
+  --status-success: #87ab63;
+  --status-warning: #d4a117;
+  --status-error: #d95c5c;
+  --error: var(--status-error);
+
+  /* JSON syntax */
+  --json-key: #7aa8d6;
+  --json-string: #a3c585;
+  --json-number: #e0b233;
+  --json-bool: #c98ae0;
+  --json-null: #969aa1;
+  --json-punct: #969aa1;
+
+  --radius: 4px;
+  --radius-box: 6px;
+}
+
+[data-theme="light"] {
+  --background: #ffffff;
+  --surface: #ffffff;
+  --surface-2: #f1f3f5;
+  --surface-3: #e8ebef;
+  --border: #d0d7de;
+  --border-2: #b9c0c7;
+  --input-bg: #ffffff;
+  --input-border: #c7ced5;
+  --nav-bg: #f6f7fa;
+
+  --text: #181c21;
+  --text-strong: #0d1117;
+  --text-muted: #5b6167;
+  --text-subtle: #6a7178;
+
+  --accent: #4183c4;
+  --accent-hover: #3876b3;
+  --accent-soft: #4183c41f;
+  --link: #2b6cb0;
+
+  /* Darker than Gitea's label fills so they pass 4.5:1 as text on white */
+  --method-get: #1a7f37;
+  --method-post: #8250df;
+  --method-put: #9a6700;
+  --method-patch: #57606a;
+  --method-delete: #cf222e;
+
+  --status-success: #1a7f37;
+  --status-warning: #9a6700;
+  --status-error: #cf222e;
+
+  --json-key: #0550ae;
+  --json-string: #116329;
+  --json-number: #953800;
+  --json-bool: #8250df;
+  --json-null: #57606a;
+  --json-punct: #57606a;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--text);
+  font-family: -apple-system, 'Segoe UI', system-ui, 'Noto Sans', 'Liberation Sans', sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-subtle); }
+
+/* Focus */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* Remove default input styles */
+input, select, textarea {
+  background-color: var(--input-bg);
+  color: var(--text);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius);
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+code, pre, kbd { font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace; }
+
+input::placeholder, textarea::placeholder {
+  color: var(--text-subtle);
+}
+
+/* Button variants — Gitea: primary is solid, the rest are bordered "basic" buttons */
+.btn-default { background-color: var(--accent); border: 1px solid var(--accent); color: #fff; border-radius: var(--radius); }
+.btn-default:hover:not(:disabled) { background-color: var(--accent-hover); border-color: var(--accent-hover); }
+.btn-ghost { color: var(--text); background-color: var(--input-bg); border: 1px solid var(--input-border); border-radius: var(--radius); }
+.btn-ghost:hover:not(:disabled) { background-color: var(--surface-3); }
+.btn-danger { background-color: var(--input-bg); border: 1px solid var(--input-border); color: var(--status-error); border-radius: var(--radius); }
+.btn-danger:hover:not(:disabled) { background-color: var(--status-error); border-color: var(--status-error); color: #fff; }
+
+/* Button sizes */
+.btn-sm { height: 28px; padding: 0 10px; font-size: 12px; }
+.btn-md { height: 34px; padding: 0 14px; font-size: 13px; }
+.btn-lg { height: 40px; padding: 0 18px; font-size: 14px; }
+.btn-icon { height: 30px; width: 30px; padding: 0; border-color: transparent; background-color: transparent; }
+.btn-icon:hover:not(:disabled) { background-color: var(--surface-3); }
+
+/* Gitea building blocks: a box with a grey header bar and divided rows, and small labels */
+.g-box { border: 1px solid var(--border); border-radius: var(--radius-box); background: var(--surface); overflow: hidden; }
+.g-box-header { display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border); font-size: 14px; font-weight: 600; color: var(--text-strong); }
+.g-box-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.g-box-row:last-child { border-bottom: none; }
+.g-counter { display: inline-flex; align-items: center; min-width: 20px; height: 18px; padding: 0 7px; justify-content: center; border-radius: 99px; background: var(--surface-3); color: var(--text-muted); font-size: 11px; font-weight: 600; }
+
+/* Card hover — used in server components (no JS handlers) */
+.card-hover {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.card-hover:hover {
+  background-color: var(--surface-2) !important;
+}
+
+/* Driver.js tour — theme overrides */
+.driver-popover {
+  background-color: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+  border-radius: 10px !important;
+  min-width: 280px !important;
+  max-width: 340px !important;
+}
+.driver-popover-title {
+  color: var(--text) !important;
+  font-size: 15px !important;
+}
+.driver-popover-description {
+  color: var(--text-muted) !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+}
+.driver-popover-close-btn {
+  color: var(--text-subtle) !important;
+}
+.driver-popover-close-btn:hover,
+.driver-popover-close-btn:focus {
+  color: var(--text) !important;
+}
+.driver-popover-progress-text {
+  color: var(--text-subtle) !important;
+  font-size: 12px !important;
+}
+.driver-popover-footer button {
+  background-color: var(--surface-2) !important;
+  color: var(--text-muted) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 5px !important;
+  padding: 5px 12px !important;
+  font-size: 12px !important;
+  text-shadow: none !important;
+}
+.driver-popover-footer button:hover,
+.driver-popover-footer button:focus {
+  background-color: var(--border) !important;
+  color: var(--text) !important;
+}
+.driver-popover-next-btn {
+  background-color: var(--accent) !important;
+  color: #fff !important;
+  border-color: var(--accent) !important;
+}
+.driver-popover-next-btn:hover,
+.driver-popover-next-btn:focus {
+  background-color: var(--accent-hover) !important;
+  border-color: var(--accent-hover) !important;
+}
+/* Arrows: only set the visible side's color */
+.driver-popover-arrow-side-left  { border-left-color:   var(--surface) !important; }
+.driver-popover-arrow-side-right { border-right-color:  var(--surface) !important; }
+.driver-popover-arrow-side-top   { border-top-color:    var(--surface) !important; }
+.driver-popover-arrow-side-bottom{ border-bottom-color: var(--surface) !important; }
+
+
+/* Brand wordmark: white "ERP" on dark themes, navy on the light theme.
+   color: transparent hides the alt text while the image loads (screen readers still read it). */
+.brand-logo { color: transparent; }
+.brand-on-light { display: none; }
+[data-theme="light"] .brand-on-light { display: block; }
+[data-theme="light"] .brand-on-dark { display: none; }
+
+/* Rotating loader icon */
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

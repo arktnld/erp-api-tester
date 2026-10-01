@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ERP {
+  id           Int              @id @default(autoincrement())
+  name         String           @unique
+  authTemplate Json             @default("{}")
+  createdAt    DateTime         @default(now())
+  companies    Company[]
+  endpoints    Endpoint[]
+  fieldSchemas ERPFieldSchema[]
+  playbooks    Playbook[]
+}
+
+model ERPFieldSchema {
+  id               Int     @id @default(autoincrement())
+  erpId            Int
+  fieldName        String
+  label            String
+  fieldType        String  @default("text")
+  required         Boolean @default(false)
+  sortOrder        Int     @default(0)
+  sourceEndpointId Int?
+  endpointParam    String  @default("")
+  responsePath     String  @default("")
+  /// Used when the test client has no value (e.g. a Wi-Fi password to set in a test).
+  defaultValue     String  @default("")
+  erp              ERP     @relation(fields: [erpId], references: [id], onDelete: Cascade)
+}
+
+model Endpoint {
+  id             Int     @id @default(autoincrement())
+  erpId          Int
+  name           String
+  method         String  @default("GET")
+  pathTemplate   String
+  bodyTemplate   String  @default("")
+  headers        String  @default("{}")
+  sortOrder      Int     @default(0)
+  group          String  @default("")
+  requiresClient  Boolean @default(true)
+  isModification  Boolean @default(false)
+  notes           String        @default("") @db.Text
+  authMode        String        @default("")
+  erp             ERP           @relation(fields: [erpId], references: [id], onDelete: Cascade)
+  playbookSteps   PlaybookStep[]
+}
+
+model Company {
+  id          Int          @id @default(autoincrement())
+  name        String
+  erpId       Int
+  baseUrl      String       @default("")
+  environments Json         @default("[]")
+  authType     String       @default("none")
+  authConfig   Json         @default("{}")
+  notes        String       @default("") @db.Text
+  createdAt   DateTime     @default(now())
+  erp          ERP           @relation(fields: [erpId], references: [id])
+  testClients  TestClient[]
+  playbookRuns PlaybookRun[]
+  apiRecords   ApiRecord[]
+  cookieJar    CompanyCookieJar?
+}
+
+// Cookies de sessão dos ERPs, compartilhados entre as instâncias do app.
+// Tabela separada para nunca vazar num include de Company.
+model CompanyCookieJar {
+  companyId Int      @id
+  cookies   Json     @default("[]")
+  updatedAt DateTime @updatedAt
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model RecordCategory {
+  id        Int         @id @default(autoincrement())
+  name      String      @unique
+  createdAt DateTime    @default(now())
+  records   ApiRecord[]
+}
+
+model ApiRecord {
+  id         Int              @id @default(autoincrement())
+  name       String
+  notes      String           @default("")
+  shareToken String?          @unique
+  companyId  Int
+  categoryId Int?
+  company    Company          @relation(fields: [companyId], references: [id])
+  category   RecordCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  blocks     RecordBlock[]
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+}
+
+model RecordBlock {
+  id         Int        @id @default(autoincrement())
+  recordId   Int
+  record     ApiRecord  @relation(fields: [recordId], references: [id], onDelete: Cascade)
+  order      Int
+  endpointId Int?
+  clientId   Int?
+  response   Json?
+  note       String     @default("") @db.Text
+  executedAt DateTime?
+  createdAt  DateTime   @default(now())
+}
+
+model TestClient {
+  id         Int      @id @default(autoincrement())
+  name       String
+  companyId  Int
+  fieldsData Json     @default("{}")
+  createdAt  DateTime @default(now())
+  company    Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+}
+
+model PostmanCollection {
+  id        Int      @id @default(autoincrement())
+  name      String
+  rawJson   Json?
+  createdAt DateTime @default(now())
+}
+
+model Playbook {
+  id          Int            @id @default(autoincrement())
+  erpId       Int
+  name        String
+  description String         @default("") @db.Text
+  createdAt   DateTime       @default(now())
+  erp         ERP            @relation(fields: [erpId], references: [id], onDelete: Cascade)
+  steps       PlaybookStep[]
+  runs        PlaybookRun[]
+}
+
+model PlaybookStep {
+  id              Int      @id @default(autoincrement())
+  playbookId      Int
+  order           Int
+  endpointId      Int
+  stepName        String   @default("")
+  bodyOverride    String   @default("") @db.Text
+  responseCapture String   @default("") @db.Text
+  assertions      String   @default("") @db.Text
+  playbook        Playbook @relation(fields: [playbookId], references: [id], onDelete: Cascade)
+  endpoint        Endpoint @relation(fields: [endpointId], references: [id])
+}
+
+model PlaybookRun {
+  id         Int       @id @default(autoincrement())
+  playbookId Int
+  companyId  Int
+  clientId   Int?
+  startedAt  DateTime  @default(now())
+  endedAt    DateTime?
+  status     String    @default("running")
+  steps      Json      @default("[]")
+  shareToken String?   @unique
+  playbook   Playbook  @relation(fields: [playbookId], references: [id])
+  company    Company   @relation(fields: [companyId], references: [id])
+}
+
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  userEmail    String
+  action       String
+  resourceType String
+  resourceId   String
+  resourceName String
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+model RequestHistory {
+  id              Int      @id @default(autoincrement())
+  erpName         String
+  companyName     String
+  endpointName    String
+  clientName      String
+  method          String
+  url             String
+  requestBody     String   @default("") @db.Text
+  requestHeaders  String   @default("{}")
+  statusCode      Int
+  responseBody    String   @default("") @db.Text
+  responseHeaders String   @default("{}")
+  durationMs      Int
+  companyId       Int?
+  endpointId      Int?
+  testClientId    Int?
+  userId          String?
+  userEmail       String?
+  createdAt       DateTime @default(now())
+
+  @@index([companyId])
+  @@index([endpointId])
+  @@index([testClientId])
+  @@index([userId])
+  @@index([createdAt])
+  @@index([statusCode])
+}
+
+// Login próprio (substitui o Clerk). Senha em scrypt; sessão = token opaco no
+// cookie, guardado aqui só como sha256 para um vazamento do banco não virar login.
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  name         String    @default("")
+  passwordHash String
+  role         String    @default("viewer")
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+  sessions     Session[]
+}
+
+model Session {
+  id        String   @id
+  userId    Int
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
