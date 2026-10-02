@@ -109,6 +109,16 @@ describe('executeRequest secret exposure', () => {
   })
 })
 
+describe('executeRequest body Content-Type', () => {
+  it('sends a body without Content-Type as what it looks like, not always JSON', async () => {
+    const soap = '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"><soap:Body/></soap:Envelope>'
+    await executeRequest({ endpointId: 1, companyId: 1, rawBody: soap })
+    expect(sent.calls[0].headers['Content-Type']).toMatch(/^text\/xml/)
+    await executeRequest({ endpointId: 1, companyId: 1, rawBody: '{"a":1}' })
+    expect(sent.calls[1].headers['Content-Type']).toBe('application/json')
+  })
+})
+
 describe('executeRequest redirects', () => {
   it('does not follow a redirect to a private address', async () => {
     sent.redirectTo = 'http://127.0.0.1:5432/'

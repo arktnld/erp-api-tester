@@ -10,6 +10,21 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { JsonTextarea } from '@/components/ui/json-textarea'
+import { BODY_MODES, contentTypeOf, modeOf, withContentType, type BodyModeId } from '@/lib/body-mode'
+
+/** Headers JSON as typed in the form; {} while it is still invalid. */
+function parseHeaders(text: string): Record<string, string> {
+  try { const h = JSON.parse(text || '{}'); return h && typeof h === 'object' && !Array.isArray(h) ? h : {} } catch { return {} }
+}
+
+const BODY_PLACEHOLDER: Record<BodyModeId | 'other', string> = {
+  json: '{"id": "{id}"}',
+  xml: '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\n  <soap:Body>…</soap:Body>\n</soap:Envelope>',
+  soap12: '<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">\n  <soap12:Body>…</soap12:Body>\n</soap12:Envelope>',
+  form: 'grant_type=password&username={usuario}',
+  text: '',
+  other: '',
+}
 import {
   deleteEndpoint,
   createEndpoint,
@@ -198,6 +213,7 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
   const [epPath, setEpPath] = useState('')
   const [epBody, setEpBody] = useState('')
   const [epHeaders, setEpHeaders] = useState('{}')
+  const epBodyMode = modeOf(contentTypeOf(parseHeaders(epHeaders)))
   const [epGroup, setEpGroup] = useState('')
   const [epRequiresClient, setEpRequiresClient] = useState(true)
   const [epIsModification, setEpIsModification] = useState(false)
@@ -517,8 +533,17 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
           <label style={labelStyle}>Path Template</label>
           <Input value={epPath} onChange={(e) => setEpPath(e.target.value)} placeholder="/api/v1/clients/{client_id}" style={{ fontFamily: 'monospace', fontSize: 12 }} required />
 
-          <label style={labelStyle}>Body Template (JSON)</label>
-          <JsonTextarea value={epBody} onChange={setEpBody} placeholder='{"id": "{id}"}' rows={5} />
+          <label style={labelStyle}>Tipo do corpo</label>
+          <select style={selectStyle} value={epBodyMode} onChange={(e) => {
+            const mode = BODY_MODES.find((m) => m.id === e.target.value)
+            if (mode) setEpHeaders(JSON.stringify(withContentType(parseHeaders(epHeaders), mode.contentType), null, 2))
+          }}>
+            {BODY_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
+            {epBodyMode === 'other' && <option value="other">Outro ({contentTypeOf(parseHeaders(epHeaders))})</option>}
+          </select>
+
+          <label style={labelStyle}>Body Template</label>
+          <JsonTextarea value={epBody} onChange={setEpBody} json={epBodyMode === 'json'} placeholder={BODY_PLACEHOLDER[epBodyMode]} rows={epBodyMode === 'json' ? 5 : 8} />
 
           <label style={labelStyle}>Headers Extras (JSON)</label>
           <JsonTextarea value={epHeaders} onChange={setEpHeaders} rows={3} />

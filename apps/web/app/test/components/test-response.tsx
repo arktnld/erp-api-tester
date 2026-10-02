@@ -13,6 +13,9 @@ import dynamic from 'next/dynamic'
 
 const CodeBlock = dynamic(() => import('@/components/ui/code-block').then(m => ({ default: m.CodeBlock })), { ssr: false })
 
+/** First response tab, named after what came back (JSON, XML…), not always "JSON". */
+const BODY_TAB_LABEL: Record<string, string> = { json: 'JSON', xml: 'XML', html: 'HTML', csv: 'CSV', text: 'Texto', image: 'Imagem', document: 'Documento', binary: 'Arquivo' }
+
 // Gitea "secondary pointing" menu: the active tab is underlined in the text color.
 const tabBtnStyle = (active: boolean): React.CSSProperties => ({
   padding: '10px 12px',
@@ -243,7 +246,7 @@ export function TestResponse({ response, loading, erpName = '', companyName = ''
 
       {/* Tabs */}
       <div style={{ display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border)', padding: '0 12px', flexShrink: 0 }}>
-        {([{ id: 'json', label: 'JSON' }, { id: 'raw', label: 'Raw' }, { id: 'headers', label: 'Headers' }, { id: 'timeline', label: 'Timeline' }] as const).map(({ id, label }) => (
+        {([{ id: 'json', label: BODY_TAB_LABEL[response.contentCategory] ?? 'Corpo' }, { id: 'raw', label: 'Raw' }, { id: 'headers', label: 'Headers' }, { id: 'timeline', label: 'Timeline' }] as const).map(({ id, label }) => (
           <button key={id} style={tabBtnStyle(resTab === id)} onClick={() => setResTab(id)}>{label}</button>
         ))}
         <div style={{ marginLeft: 'auto' }}>

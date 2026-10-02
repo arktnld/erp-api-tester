@@ -1,5 +1,6 @@
 'use client'
 
+import { contentTypeOf, editorLanguageOf, guessContentType } from '@/lib/body-mode'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { Pencil, Play, Square } from 'lucide-react'
 import { TestSelectors } from './components/test-selectors'
@@ -23,19 +24,6 @@ type Session = {
   bodyMode: 'form' | 'raw'
   rawBody: string
   response: ExecuteResponse | null
-}
-
-function detectLanguage(headersJson: string): 'json' | 'xml' | 'text' {
-  try {
-    const headers = JSON.parse(headersJson) as Record<string, string>
-    const ct = Object.entries(headers)
-      .find(([k]) => k.toLowerCase() === 'content-type')?.[1]?.toLowerCase() ?? ''
-    if (ct.includes('xml')) return 'xml'
-    if (ct.includes('json') || !ct) return 'json'
-    return 'text'
-  } catch {
-    return 'json'
-  }
 }
 
 export function TestPage({
@@ -239,7 +227,8 @@ export function TestPage({
   const resolvedBody = endpoint?.bodyTemplate?.trim() ? substitute(endpoint.bodyTemplate, allFields) : ''
   const needsClient = endpoint?.requiresClient !== false
   const canExecute = !!(erpId && companyId && endpointId && (!needsClient || clientId))
-  const editorLanguage = detectLanguage(endpoint?.headers ?? '{}')
+  const endpointHeaders = (() => { try { return JSON.parse(endpoint?.headers || '{}') as Record<string, string> } catch { return {} } })()
+  const editorLanguage = editorLanguageOf(contentTypeOf(endpointHeaders) || guessContentType(resolvedBody))
   // Header names whose values should be fully masked
   const sensitiveHeaderKeys: Set<string> = (() => {
     const cfg = company?.authConfig as Record<string, unknown> | null

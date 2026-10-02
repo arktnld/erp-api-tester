@@ -9,6 +9,8 @@ interface JsonTextareaProps {
   placeholder?: string
   rows?: number
   style?: React.CSSProperties
+  /** false for XML, form or text bodies: no JSON check or pretty-print. */
+  json?: boolean
 }
 
 function isValidJson(text: string): boolean {
@@ -16,13 +18,13 @@ function isValidJson(text: string): boolean {
   try { JSON.parse(text); return true } catch { return false }
 }
 
-export function JsonTextarea({ value, onChange, placeholder, rows = 4, style }: JsonTextareaProps) {
+export function JsonTextarea({ value, onChange, placeholder, rows = 4, style, json = true }: JsonTextareaProps) {
   const [touched, setTouched] = useState(false)
-  const invalid = touched && value.trim() !== '' && !isValidJson(value)
+  const invalid = json && touched && value.trim() !== '' && !isValidJson(value)
 
   function handleBlur() {
     setTouched(true)
-    if (value.trim() && isValidJson(value)) {
+    if (json && value.trim() && isValidJson(value)) {
       onChange(tryPrettyJson(value))
     }
   }

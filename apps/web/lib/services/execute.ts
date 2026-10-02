@@ -1,4 +1,5 @@
 import { substitute } from '@/lib/utils'
+import { contentTypeOf, guessContentType } from '@/lib/body-mode'
 import { bareHostname, publicOnlyLookup, validatePublicUrl } from '@/lib/security'
 import { buildAuthHeadersForMode, getAuthModes, isTokenFresh, resolveAuth, stringCreds, tokenCacheEntry, withTokenCacheFor, type ResolvedAuth } from '@/lib/auth'
 import { fieldDefaults, mergeFields } from '@/lib/fields'
@@ -132,8 +133,8 @@ export interface ExecuteResult {
 
 function getContentCategory(mimeType: string): ContentCategory {
   const m = mimeType.toLowerCase().split(';')[0].trim()
-  if (m === 'application/json' || m === 'application/vnd.api+json' || m === 'application/ld+json') return 'json'
-  if (m === 'application/xml' || m === 'text/xml' || m === 'application/soap+xml') return 'xml'
+  if (m === 'application/json' || m.endsWith('+json')) return 'json'
+  if (m === 'application/xml' || m === 'text/xml' || m.endsWith('+xml')) return 'xml'
   if (m === 'text/html') return 'html'
   if (m === 'text/csv') return 'csv'
   if (m === 'text/plain' || m === 'application/x-www-form-urlencoded') return 'text'
@@ -321,7 +322,7 @@ export async function executeRequest(params: ExecuteParams): Promise<ExecuteResu
       throw new ValidationError(String(err))
     }
     const requestHeaders: Record<string, string> = {
-      ...(resolvedBody != null && !endpointHeaders['Content-Type'] ? { 'Content-Type': 'application/json' } : {}),
+      ...(resolvedBody != null && !contentTypeOf(endpointHeaders) ? { 'Content-Type': guessContentType(resolvedBody) } : {}),
       ...endpointHeaders,
       ...authHeaders,
     }
