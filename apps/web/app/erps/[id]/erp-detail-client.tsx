@@ -32,6 +32,7 @@ import {
   reorderEndpoints,
   duplicateEndpoint,
   importOpenApi,
+  importWsdlOperations,
 } from '@/lib/actions/endpoints'
 import { createFieldSchema, updateFieldSchema, deleteFieldSchema, duplicateFieldSchema, reorderFieldSchemas } from '@/lib/actions/field-schemas'
 import { AuthModesEditor } from './auth-modes-editor'
@@ -179,7 +180,17 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
     if (!file) return
     setImportStatus('Importando…')
     try {
-      const r = await importOpenApi(erp.id, await file.text())
+      const text = await file.text()
+      // WSDL is XML, read here with the browser's DOMParser; OpenAPI is JSON, read on the server
+      if (text.trimStart().startsWith('<')) {
+        const { parseWsdl } = await import('@/lib/wsdl-import')
+        const w = parseWsdl(text)
+        const r = await importWsdlOperations(erp.id, w.endpoints)
+        const origin = w.serviceUrl ? new URL(w.serviceUrl).origin : ''
+        setImportStatus(`${r.created} operações SOAP importadas, ${r.skipped} já existiam${origin ? ` · URL base das empresas: ${origin}` : ''}${w.warnings.length ? ` · ${w.warnings[0]}` : ''}`)
+        return
+      }
+      const r = await importOpenApi(erp.id, text)
       setImportStatus(`${r.created} importados, ${r.skipped} já existiam${r.warnings.length ? ` · ${r.warnings.length} aviso(s): ${r.warnings[0]}` : ''}`)
     } catch (err) {
       setImportStatus(`Erro: ${err instanceof Error ? err.message : String(err)}`)
@@ -313,9 +324,9 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
           {canEdit && (
             <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 8, marginBottom: 16 }}>
               {importStatus && <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{importStatus}</span>}
-              <input ref={importInput} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={handleImportOpenApi} />
+              <input ref={importInput} type="file" accept=".json,.wsdl,.xml,application/json,text/xml,application/xml" style={{ display: 'none' }} onChange={handleImportOpenApi} />
               <Button variant="ghost" onClick={() => importInput.current?.click()}>
-                <Upload size={14} /> Importar OpenAPI
+                <Upload size={14} /> Importar OpenAPI / WSDL
               </Button>
               <Button onClick={() => openEndpointSheet()}><Plus size={14} /> Endpoint</Button>
             </div>

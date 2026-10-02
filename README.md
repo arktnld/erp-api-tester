@@ -57,7 +57,7 @@ autenticação, faz uma chamada de verdade e explica em português o que deu err
   <tr>
     <td width="50%" valign="top">
       <b>ERPs e endpoints</b><br>
-      Endpoints agrupados por assunto, campos do cliente com preenchimento automático e vários modos de autenticação por ERP. Importa Postman, curl ou OpenAPI.
+      Endpoints agrupados por assunto, campos do cliente com preenchimento automático e vários modos de autenticação por ERP. Importa Postman, curl, OpenAPI ou WSDL.
     </td>
     <td width="50%" valign="top">
       <b>Início</b><br>
@@ -85,12 +85,12 @@ Como no [Bruno](https://github.com/usebruno/bruno), SOAP e GraphQL são chamadas
 | Tipo | Como fica no ERP Tester |
 |---|---|
 | REST / JSON | Qualquer método, `{placeholders}` no caminho e no corpo, resposta JSON navegável |
-| SOAP / XML | POST com o envelope XML (`text/xml` ou `application/soap+xml`), resposta XML formatada |
+| SOAP / XML | Importa o WSDL: um endpoint por operação, com o envelope, `{placeholders}` e o `SOAPAction` prontos. Resposta XML formatada |
 | GraphQL | POST com `{"query": ..., "variables": ...}` num único endpoint |
 
 <img src="docs/screenshots/soap.png" alt="Chamada SOAP com envelope XML e a resposta" width="100%">
 
-Os endpoints entram um a um ou importados de uma coleção Postman, OpenAPI ou curl.
+Os endpoints entram um a um ou importados de uma coleção Postman, OpenAPI, WSDL ou curl.
 
 ## Stack
 

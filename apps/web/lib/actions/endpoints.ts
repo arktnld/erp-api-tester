@@ -91,6 +91,23 @@ export async function reorderEndpoints(erpId: number, orderedIds: number[]) {
   revalidatePath(`/erps/${erpId}`)
 }
 
+/** Saves endpoint drafts after the last one; a draft whose key already exists is skipped. */
+async function insertDrafts(erpId: number, drafts: unknown[], keyOf: (e: { method: string; pathTemplate: string; name: string }) => string) {
+  const existing = await prisma.endpoint.findMany({ where: { erpId }, select: { method: true, pathTemplate: true, name: true, sortOrder: true } })
+  const seen = new Set(existing.map(keyOf))
+  let nextOrder = existing.reduce((max, e) => Math.max(max, e.sortOrder), -1) + 1
+  const data = []
+  for (const draft of drafts) {
+    const ep = EndpointSchema.parse({ ...(draft as object), erpId, authMode: '' })
+    if (seen.has(keyOf(ep))) continue
+    seen.add(keyOf(ep))
+    data.push({ ...ep, sortOrder: nextOrder++ })
+  }
+  if (data.length) await prisma.endpoint.createMany({ data })
+  revalidatePath(`/erps/${erpId}`)
+  return { created: data.length, skipped: drafts.length - data.length }
+}
+
 /** Creates endpoints from an OpenAPI/Swagger JSON spec; operations already present (method + path) are skipped. */
 export async function importOpenApi(erpId: number, specText: string) {
   await requireAdmin()
@@ -101,17 +118,16 @@ export async function importOpenApi(erpId: number, specText: string) {
     throw new Error('O arquivo não é JSON válido. Use a versão JSON do Swagger/OpenAPI.')
   }
   const { endpoints, warnings } = parseOpenApi(doc)
-  const existing = await prisma.endpoint.findMany({ where: { erpId }, select: { method: true, pathTemplate: true, sortOrder: true } })
-  const seen = new Set(existing.map((e) => `${e.method} ${e.pathTemplate}`))
-  let nextOrder = existing.reduce((max, e) => Math.max(max, e.sortOrder), -1) + 1
-  const data = []
-  for (const ep of endpoints) {
-    const key = `${ep.method} ${ep.pathTemplate}`
-    if (seen.has(key)) continue
-    seen.add(key)
-    data.push({ ...EndpointSchema.parse({ ...ep, erpId, authMode: '' }), sortOrder: nextOrder++ })
-  }
-  if (data.length) await prisma.endpoint.createMany({ data })
-  revalidatePath(`/erps/${erpId}`)
-  return { created: data.length, skipped: endpoints.length - data.length, warnings: warnings.slice(0, 20) }
+  const r = await insertDrafts(erpId, endpoints, (e) => `${e.method} ${e.pathTemplate}`)
+  return { ...r, warnings: warnings.slice(0, 20) }
+}
+
+/**
+ * Saves the SOAP operations read from a WSDL in the browser (lib/wsdl-import). Every operation shares
+ * the service path, so the operation name is part of the duplicate check.
+ */
+export async function importWsdlOperations(erpId: number, drafts: unknown[]) {
+  await requireAdmin()
+  if (!Array.isArray(drafts) || drafts.length > 500) throw new Error('Lista de operações inválida.')
+  return insertDrafts(erpId, drafts, (e) => `${e.method} ${e.pathTemplate} ${e.name}`)
 }

@@ -106,7 +106,7 @@ export function Journey() {
         <Link href="/erps" style={{ fontSize: 13, color: 'var(--link)', whiteSpace: 'nowrap' }}>Sair do assistente</Link>
       </div>
       <p style={{ ...text, marginBottom: 18 }}>
-        Qualquer API HTTP: REST, SOAP ou GraphQL. Informe o endereço e a autenticação, faça uma chamada e pronto. Depois dá para importar o resto dos endpoints de uma coleção Postman, OpenAPI ou curl.
+        Qualquer API HTTP: REST, SOAP ou GraphQL. Informe o endereço e a autenticação, faça uma chamada e pronto. Depois dá para importar o resto dos endpoints de uma coleção Postman, OpenAPI, WSDL ou curl.
       </p>
 
       <ol aria-label="Passos" style={{ display: 'flex', gap: 6, listStyle: 'none', padding: 0, margin: '0 0 16px', flexWrap: 'wrap' }}>
