@@ -1,9 +1,6 @@
 <div align="center">
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="apps/web/assets/brand/logo-dark.png">
-  <img alt="ERP Tester" src="apps/web/assets/brand/logo-light.png" width="260">
-</picture>
+<img alt="ERP Tester" src="docs/screenshots/logo-banner.png" width="600">
 
 ### Teste, documente e compartilhe as APIs dos ERPs de provedores de internet
 
