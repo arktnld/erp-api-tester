@@ -1,22 +1,98 @@
-# ERP API Tester
+<div align="center">
 
-Testa, documenta e compartilha chamadas às APIs de ERPs de provedores de internet, sem Postman
-espalhado por cada máquina: as credenciais de cada empresa ficam num lugar só, o token é renovado
-sozinho e o time inteiro vê o mesmo histórico.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="apps/web/assets/brand/logo-dark.png">
+  <img alt="ERP Tester" src="apps/web/assets/brand/logo-light.png" width="260">
+</picture>
 
-Vem com modelos prontos de **IXC Provedor, SGP, Hubsoft, Voalle e MK Solutions** (endpoints, modos de
-autenticação e campos do cliente). Na primeira entrada, um assistente cadastra o ERP, a empresa, testa
-a conexão e faz a primeira chamada por CPF em uns 2 minutos. Outros ERPs entram importando Postman,
-curl ou OpenAPI.
+### Teste, documente e compartilhe as APIs dos ERPs de provedores de internet
+
+Credenciais de cada empresa num lugar só, token renovado sozinho e o time inteiro vendo o mesmo histórico.
+Vem pronto para **IXC Provedor, SGP, Hubsoft, Voalle e MK Solutions**.
+
+[![Licença MIT](https://img.shields.io/badge/licen%C3%A7a-MIT-4183c4?style=flat-square)](LICENSE)
+[![gitleaks](https://img.shields.io/github/actions/workflow/status/arktnld/erp-api-tester/gitleaks.yml?branch=master&label=gitleaks&style=flat-square)](https://github.com/arktnld/erp-api-tester/actions/workflows/gitleaks.yml)
+![Next.js 16](https://img.shields.io/badge/Next.js-16-000?style=flat-square&logo=nextdotjs)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?style=flat-square&logo=typescript&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169e1?style=flat-square&logo=postgresql&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker-pronto-2496ed?style=flat-square&logo=docker&logoColor=white)
+[![PRs bem-vindos](https://img.shields.io/badge/PRs-bem--vindos-2ea44f?style=flat-square)](#contribuindo)
+
+[Instalação](#instalação-numa-vps-ubuntudebian) · [Docker](#docker) · [Desenvolvimento](#desenvolvimento) · [Modelos de ERP](#modelos-de-erp) · [Contribuindo](#contribuindo)
+
+<br>
+
+<img src="docs/screenshots/hero.png" alt="Tela Testar API: requisição POST e resposta JSON" width="100%">
+
+</div>
+
+## Por que existe
+
+Quem integra com ERP de provedor vive com coleções do Postman espalhadas por cada máquina, tokens vencendo no
+meio do teste e credenciais coladas em conversa. O ERP Tester junta isso num lugar: cada empresa guarda as
+próprias credenciais (mascaradas no histórico), o token é obtido e renovado sozinho, e qualquer pessoa do time
+repete a chamada que outra fez.
+
+## Primeira chamada em 2 minutos
+
+Na primeira entrada um assistente pergunta qual ERP vocês usam (ou descobre sozinho pela URL da API), cadastra
+a empresa, testa a conexão explicando o erro em português e faz a primeira busca de cliente pelo CPF, já
+preenchendo os dados do cliente de teste.
+
+<img src="docs/screenshots/setup.png" alt="Assistente de primeira configuração com os modelos de ERP" width="100%">
 
 ## O que tem
 
-- **Testar API**: qualquer endpoint, com os campos do cliente de teste preenchidos sozinhos
-- **Autenticação**: Basic, Bearer, API key, campos no corpo ou token obtido num endpoint (renovado sozinho); vários modos por ERP
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <b>Testar API</b><br>
+      Qualquer endpoint, com os campos do cliente de teste preenchidos sozinhos, resposta em JSON navegável, headers e linha do tempo.
+    </td>
+    <td width="50%" valign="top">
+      <b>Histórico</b><br>
+      Toda chamada guardada, com filtros por empresa, endpoint, cliente, status e usuário. Credenciais mascaradas.
+    </td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/test-api.png" alt="Testar API"></td>
+    <td><img src="docs/screenshots/history.png" alt="Histórico de requisições"></td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <b>ERPs e endpoints</b><br>
+      Endpoints agrupados por assunto, campos do cliente com preenchimento automático e vários modos de autenticação por ERP. Importa Postman, curl ou OpenAPI.
+    </td>
+    <td width="50%" valign="top">
+      <b>Início</b><br>
+      Visão geral, últimas requisições com "Repetir" em um clique e as empresas cadastradas.
+    </td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/erp.png" alt="Página de um ERP com endpoints agrupados"></td>
+    <td><img src="docs/screenshots/home.png" alt="Tela inicial"></td>
+  </tr>
+</table>
+
+E também:
+
+- **Autenticação**: Basic, Bearer, API key, campos no corpo ou token obtido num endpoint (renovado sozinho)
 - **Fluxos**: chamadas encadeadas, com uma resposta alimentando a próxima
 - **Registros**: chamadas salvas e documentadas, com link de visualização compartilhável
-- **Histórico**: toda chamada, com filtros (credenciais mascaradas)
-- **Usuários**: admin, editor e leitor, com login próprio (senhas scrypt, sessões no banco)
+- **Usuários**: admin, editor e leitor, com login próprio (senhas scrypt, sessões no banco, bloqueio após tentativas erradas)
+- **Segurança**: chamadas só para a URL da empresa, bloqueio de IPs internos (SSRF), credenciais nunca vão para o navegador de quem não pode vê-las
+
+## Modelos de ERP
+
+| ERP | Endpoints prontos | Autenticação |
+|---|---|---|
+| IXC Provedor | 27 | Usuário e token (Basic) |
+| SGP | 23 | Token + app no corpo, ou Basic |
+| MK Solutions | 14 | Token obtido no WSAutenticacao |
+| Voalle | 11 | OAuth2 (client credentials ou password) |
+| Hubsoft | 9 | OAuth2 com renovação automática |
+
+Seu ERP não está aqui? Importe a coleção Postman ou o OpenAPI dele, ou [contribua com um modelo](#contribuindo).
 
 ## Stack
 
@@ -64,17 +140,21 @@ A única variável obrigatória é `DATABASE_URL`.
 ## Estrutura
 
 ```
-apps/web/          aplicação Next.js (app/, components/, lib/)
+apps/web/             aplicação Next.js (app/, components/, lib/)
   lib/erp-templates/  modelos prontos de ERP (JSON)
-packages/db/       schema e migrations do Prisma
-scripts/           instalação e deploy na VPS
+packages/db/          schema e migrations do Prisma
+scripts/              instalação e deploy na VPS
+docs/screenshots/     imagens deste README
 ```
 
 ## Contribuindo
 
-Testes: `pnpm --filter web exec vitest run`. Um modelo de ERP novo é um JSON em
-`apps/web/lib/erp-templates/` mais uma linha em `index.ts`; o teste ao lado confere a estrutura.
+Issues e pull requests são bem-vindos.
+
+- Testes: `pnpm --filter web exec vitest run`
+- Um modelo de ERP novo é um JSON em `apps/web/lib/erp-templates/` mais uma linha em `index.ts`; o teste ao lado confere a estrutura.
+- Nunca coloque credenciais, nomes de clientes ou IPs reais em código, testes ou capturas de tela. O gitleaks barra segredos em todo push.
 
 ## Licença
 
-[MIT](LICENSE)
+[MIT](LICENSE) © arktnld
