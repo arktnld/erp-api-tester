@@ -486,7 +486,7 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
       )}
 
       {/* Endpoint Sheet */}
-      {canEdit && <Sheet open={endpointSheet.open} onClose={() => setEndpointSheet({ open: false })} title={endpointSheet.endpoint ? 'Editar Endpoint' : 'Novo Endpoint'}>
+      {canEdit && <Sheet open={endpointSheet.open} onClose={() => setEndpointSheet({ open: false })} width={680} title={endpointSheet.endpoint ? 'Editar Endpoint' : 'Novo Endpoint'}>
         <form onSubmit={(e) => {
           e.preventDefault()
           startTransition(async () => {

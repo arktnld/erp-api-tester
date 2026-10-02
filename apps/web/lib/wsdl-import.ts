@@ -98,7 +98,7 @@ export function parseWsdl(xml: string, parser: DOMParser = new DOMParser()): Par
     const headers = soap12 ? { 'Content-Type': contentType } : { 'Content-Type': contentType, SOAPAction: `"${action}"` }
     const docText = kid(abstract, 'documentation')?.textContent?.trim() ?? ''
     return {
-      name, method: 'POST', pathTemplate: path, bodyTemplate: envelope(soap12, body), headers: JSON.stringify(headers),
+      name, method: 'POST', pathTemplate: path, bodyTemplate: envelope(soap12, body), headers: JSON.stringify(headers, null, 2),
       group, requiresClient: false, isModification: false, notes: docText || (action ? `SOAPAction: ${action}` : ''),
     }
   })

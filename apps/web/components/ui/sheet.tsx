@@ -27,7 +27,7 @@ export function Sheet({
       requestAnimationFrame(() => requestAnimationFrame(() => setVisible(true)))
     } else {
       setVisible(false)
-      const t = setTimeout(() => setMounted(false), 260)
+      const t = setTimeout(() => setMounted(false), 200)
       return () => clearTimeout(t)
     }
   }, [open])
@@ -42,78 +42,45 @@ export function Sheet({
 
   if (!mounted) return null
 
+  // Centered floating window, like the delete dialogs (no side panel).
   return (
-    <>
-      {/* Backdrop */}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 100, padding: 16,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        opacity: visible ? 1 : 0, transition: 'opacity 0.2s ease',
+      }}
+    >
       <div
-        onClick={onClose}
+        className="g-box"
+        onClick={(e) => e.stopPropagation()}
         style={{
-          position: 'fixed',
-          inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.6)',
-          zIndex: 100,
-          opacity: visible ? 1 : 0,
-          transition: 'opacity 0.25s ease',
-        }}
-      />
-      {/* Panel */}
-      <div
-        style={{
-          position: 'fixed',
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width,
-          backgroundColor: 'var(--surface)',
-          borderLeft: '1px solid var(--border)',
-          zIndex: 101,
-          display: 'flex',
-          flexDirection: 'column',
-          overflow: 'hidden',
-          transform: visible ? 'translateX(0)' : 'translateX(100%)',
-          transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1)',
+          width, maxWidth: '100%', maxHeight: '88vh',
+          display: 'flex', flexDirection: 'column', overflow: 'hidden',
+          boxShadow: '0 12px 40px rgba(0,0,0,.35)',
+          transform: visible ? 'scale(1)' : 'scale(0.97)', transition: 'transform 0.2s ease',
         }}
       >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '12px 16px',
-            background: 'var(--surface-2)',
-            borderBottom: '1px solid var(--border)',
-            flexShrink: 0,
-          }}
-        >
-          <h2
-            style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text-strong)',
-            }}
-          >
-            {title}
-          </h2>
+        <div className="g-box-header" style={{ justifyContent: 'space-between', flexShrink: 0 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-strong)', margin: 0 }}>{title}</h2>
           <button
+            type="button"
             onClick={onClose}
-            style={{
-              color: 'var(--text-muted)',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              padding: 4,
-              borderRadius: 4,
-            }}
+            aria-label="Fechar"
+            style={{ color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: 4, borderRadius: 4 }}
           >
             <X size={18} />
           </button>
         </div>
-        <div style={{ flex: 1, overflow: 'auto', padding: '20px' }}>
+        <div style={{ flex: 1, overflow: 'auto', padding: 20 }}>
           {children}
         </div>
       </div>
-    </>
+    </div>
   )
 }
