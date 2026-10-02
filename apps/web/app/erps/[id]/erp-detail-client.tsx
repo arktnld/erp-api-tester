@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input'
 import { Sheet } from '@/components/ui/sheet'
 import { JsonTextarea } from '@/components/ui/json-textarea'
 import { BODY_MODES, contentTypeOf, modeOf, withContentType, type BodyModeId } from '@/lib/body-mode'
+import { buildGraphqlBody, parseGraphqlBody } from '@/lib/graphql-body'
+import { GraphqlEditor } from '@/components/ui/graphql-editor'
 
 /** Headers JSON as typed in the form; {} while it is still invalid. */
 function parseHeaders(text: string): Record<string, string> {
@@ -19,6 +21,7 @@ function parseHeaders(text: string): Record<string, string> {
 
 const BODY_PLACEHOLDER: Record<BodyModeId | 'other', string> = {
   json: '{"id": "{id}"}',
+  graphql: '',
   xml: '<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">\n  <soap:Body>…</soap:Body>\n</soap:Envelope>',
   soap12: '<soap12:Envelope xmlns:soap12="http://www.w3.org/2003/05/soap-envelope">\n  <soap12:Body>…</soap12:Body>\n</soap12:Envelope>',
   form: 'grant_type=password&username={usuario}',
@@ -224,7 +227,9 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
   const [epPath, setEpPath] = useState('')
   const [epBody, setEpBody] = useState('')
   const [epHeaders, setEpHeaders] = useState('{}')
-  const epBodyMode = modeOf(contentTypeOf(parseHeaders(epHeaders)))
+  const [epGraphqlAsJson, setEpGraphqlAsJson] = useState(false)
+  const epCtMode = modeOf(contentTypeOf(parseHeaders(epHeaders)))
+  const epBodyMode = epCtMode === 'json' && !epGraphqlAsJson && parseGraphqlBody(epBody) ? 'graphql' : epCtMode
   const [epGroup, setEpGroup] = useState('')
   const [epRequiresClient, setEpRequiresClient] = useState(true)
   const [epIsModification, setEpIsModification] = useState(false)
@@ -272,6 +277,7 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
     setEpPath(ep?.pathTemplate ?? '')
     setEpBody(ep?.bodyTemplate ?? '')
     setEpHeaders(ep?.headers ?? '{}')
+    setEpGraphqlAsJson(false)
     setEpGroup(ep?.group ?? '')
     setEpRequiresClient(ep?.requiresClient ?? true)
     setEpIsModification(ep?.isModification ?? false)
@@ -547,14 +553,24 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
           <label style={labelStyle}>Tipo do corpo</label>
           <select style={selectStyle} value={epBodyMode} onChange={(e) => {
             const mode = BODY_MODES.find((m) => m.id === e.target.value)
-            if (mode) setEpHeaders(JSON.stringify(withContentType(parseHeaders(epHeaders), mode.contentType), null, 2))
+            if (!mode) return
+            setEpHeaders(JSON.stringify(withContentType(parseHeaders(epHeaders), mode.contentType), null, 2))
+            setEpGraphqlAsJson(mode.id === 'json')
+            if (mode.id === 'graphql' && !parseGraphqlBody(epBody)) {
+              const r = buildGraphqlBody('query {\n  \n}', '')
+              if ('body' in r) setEpBody(r.body)
+            }
           }}>
             {BODY_MODES.map((m) => <option key={m.id} value={m.id}>{m.label}</option>)}
             {epBodyMode === 'other' && <option value="other">Outro ({contentTypeOf(parseHeaders(epHeaders))})</option>}
           </select>
 
           <label style={labelStyle}>Body Template</label>
-          <JsonTextarea value={epBody} onChange={setEpBody} json={epBodyMode === 'json'} placeholder={BODY_PLACEHOLDER[epBodyMode]} rows={epBodyMode === 'json' ? 5 : 8} />
+          {epBodyMode === 'graphql'
+            ? <div style={{ height: 320, display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', borderRadius: 6, overflow: 'hidden' }}>
+                <GraphqlEditor value={epBody} onChange={setEpBody} />
+              </div>
+            : <JsonTextarea value={epBody} onChange={setEpBody} json={epBodyMode === 'json'} placeholder={BODY_PLACEHOLDER[epBodyMode]} rows={epBodyMode === 'json' ? 5 : 8} />}
 
           <label style={labelStyle}>Headers Extras (JSON)</label>
           <JsonTextarea value={epHeaders} onChange={setEpHeaders} rows={3} />

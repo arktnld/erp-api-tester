@@ -2,6 +2,8 @@
 
 export const BODY_MODES = [
   { id: 'json', label: 'JSON', contentType: 'application/json' },
+  // GraphQL is a JSON body with "query": told apart by the body (lib/graphql-body), not the header
+  { id: 'graphql', label: 'GraphQL', contentType: 'application/json' },
   { id: 'xml', label: 'XML / SOAP 1.1', contentType: 'text/xml; charset=utf-8' },
   { id: 'soap12', label: 'SOAP 1.2', contentType: 'application/soap+xml; charset=utf-8' },
   { id: 'form', label: 'Formulário (urlencoded)', contentType: 'application/x-www-form-urlencoded' },

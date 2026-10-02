@@ -10,6 +10,9 @@ import type { EditorLanguage } from '@/components/ui/code-editor'
 const CodeBlock = dynamic(() => import('@/components/ui/code-block').then(m => ({ default: m.CodeBlock })), { ssr: false })
 const CodeEditor = dynamic(() => import('@/components/ui/code-editor').then(m => ({ default: m.CodeEditor })), { ssr: false })
 import type { ExecuteResponse } from '../lib/types'
+import { parseGraphqlBody } from '@/lib/graphql-body'
+
+const GraphqlEditor = dynamic(() => import('@/components/ui/graphql-editor').then((m) => m.GraphqlEditor), { ssr: false })
 
 interface TestRequestProps {
   response: ExecuteResponse | null
@@ -31,6 +34,10 @@ function isValidJson(text: string): boolean {
 export function TestRequest({ response, resolvedBody, bodyMode, rawBody, editorLanguage, sensitiveValues, sensitiveHeaderKeys, onBodyModeChange, onRawBodyChange }: TestRequestProps) {
   const [showSensitive, setShowSensitive] = useState(false)
   const [jsonTouched, setJsonTouched] = useState(false)
+  // GraphQL bodies ({"query": …}) open as Query + Variables; "JSON" shows the raw body
+  const [showGraphqlJson, setShowGraphqlJson] = useState(false)
+  const isGraphql = editorLanguage === 'json' && parseGraphqlBody(rawBody) !== null
+  const graphqlView = isGraphql && !showGraphqlJson
   const hasSensitive = sensitiveHeaderKeys.size > 0 || sensitiveValues.size > 0
   const jsonInvalid = jsonTouched && editorLanguage === 'json' && !isValidJson(rawBody)
 
@@ -162,15 +169,28 @@ export function TestRequest({ response, resolvedBody, bodyMode, rawBody, editorL
                 outlineOffset: -1,
                 overflow: 'hidden',
               }}>
-                <CodeEditor
-                  value={rawBody}
-                  onChange={onRawBodyChange}
-                  onBlur={handleEditorBlur}
-                  language={editorLanguage}
-                  fill
-                />
+                {graphqlView
+                  ? <GraphqlEditor value={rawBody} onChange={onRawBodyChange} />
+                  : <CodeEditor
+                      value={rawBody}
+                      onChange={onRawBodyChange}
+                      onBlur={handleEditorBlur}
+                      language={editorLanguage}
+                      fill
+                    />}
               </div>
-              {editorLanguage === 'json' && (
+              {isGraphql && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '6px 10px', borderTop: '1px solid var(--border)' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowGraphqlJson((v) => !v)}
+                    style={{ padding: '3px 10px', fontSize: 11, color: 'var(--text-muted)', background: 'none', border: '1px solid var(--border)', borderRadius: 5, cursor: 'pointer' }}
+                  >
+                    {graphqlView ? 'Ver JSON' : 'Ver GraphQL'}
+                  </button>
+                </div>
+              )}
+              {editorLanguage === 'json' && !graphqlView && (
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderTop: '1px solid var(--border)' }}>
                   {jsonInvalid
                     ? <span style={{ fontSize: 11, color: 'var(--status-error)' }}>JSON inválido</span>

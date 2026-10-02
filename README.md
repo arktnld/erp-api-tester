@@ -86,7 +86,7 @@ Como no [Bruno](https://github.com/usebruno/bruno), SOAP e GraphQL são chamadas
 |---|---|
 | REST / JSON | Qualquer método, `{placeholders}` no caminho e no corpo, resposta JSON navegável |
 | SOAP / XML | Importa o WSDL: um endpoint por operação, com o envelope, `{placeholders}` e o `SOAPAction` prontos. Resposta XML formatada |
-| GraphQL | POST com `{"query": ..., "variables": ...}` num único endpoint |
+| GraphQL | Editores separados de Query e Variables, enviados como `{"query", "variables"}` num único endpoint |
 
 <img src="docs/screenshots/soap.png" alt="Chamada SOAP com envelope XML e a resposta" width="100%">
 
