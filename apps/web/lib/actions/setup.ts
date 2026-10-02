@@ -4,81 +4,80 @@ import { z } from 'zod'
 import { prisma } from '@erp/db'
 import { requireAdmin } from '@/lib/require-role'
 import { recordAudit } from '@/lib/audit'
-import { templateBySlug } from '@/lib/erp-templates'
+import { AUTH_TYPES, SETUP_AUTH_TYPES } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
 
-// First-run journey (/setup): install a ready ERP template and its first company.
+// First-run journey (/setup): any HTTP API (REST, SOAP, GraphQL) from its URL, auth and one request.
 
-const CompanyInput = z.object({
-  name: z.string().trim().min(1, 'Dê um nome à empresa').max(200),
-  baseUrl: z.string().trim().url('URL base inválida (ex.: https://api.provedor.com.br)').refine((u) => /^https?:\/\//.test(u), 'Use http:// ou https://'),
-  /** Credentials per auth mode id. */
-  credentials: z.record(z.record(z.string().max(2000))),
+const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
+
+const SetupInput = z.object({
+  name: z.string().trim().min(1, 'Dê um nome à API').max(100),
+  baseUrl: z.string().trim().url('URL base inválida (ex.: https://api.exemplo.com)').refine((u) => /^https?:\/\//.test(u), 'Use http:// ou https://'),
+  authType: z.enum(SETUP_AUTH_TYPES),
+  credentials: z.record(z.string().max(2000)),
+  method: z.enum(METHODS),
+  path: z.string().trim().max(2000).refine((p) => p === '' || p.startsWith('/'), 'O caminho começa com /'),
+  body: z.string().max(100_000),
+  contentType: z.string().max(100),
 })
-type CompanyInput = z.infer<typeof CompanyInput>
-type Result = { error: string } | { erpId: number; companyId: number; endpointIds: Record<string, number> }
+export type SetupInput = z.infer<typeof SetupInput>
+export type SetupIds = { erpId: number; companyId: number; endpointId: number }
 
-/** authConfig in the shape the company form writes: flat for one mode, keyed by mode id for several. */
-function authConfigFor(modes: { id: string; type: string; tokenEndpointId?: number; tokenPath?: string }[], credentials: CompanyInput['credentials']) {
-  const one = (m: (typeof modes)[number]) => m.type === 'token_endpoint'
-    ? { tokenEndpointId: m.tokenEndpointId, tokenPath: m.tokenPath ?? 'token', params: credentials[m.id] ?? {} }
-    : { ...(credentials[m.id] ?? {}) }
-  return modes.length === 1 ? one(modes[0]) : Object.fromEntries(modes.map((m) => [m.id, one(m)]))
+function authFor(input: SetupInput) {
+  if (input.authType === 'none') return { authTemplate: {}, authType: 'none', authConfig: {} }
+  const fields = (AUTH_TYPES[input.authType].fixedKeys ?? []).map((f) => ({ key: f.key, label: f.label, placeholder: '', default: '', hidden: false }))
+  return {
+    authTemplate: { type: input.authType, label: AUTH_TYPES[input.authType].label, fields },
+    authType: input.authType,
+    authConfig: Object.fromEntries(fields.map((f) => [f.key, input.credentials[f.key] ?? ''])),
+  }
+}
+
+function endpointFor(input: SetupInput) {
+  const hasBody = input.body.trim() !== '' && input.method !== 'GET'
+  return {
+    name: 'Primeira chamada',
+    requiresClient: false,
+    method: input.method,
+    pathTemplate: input.path || '/',
+    bodyTemplate: hasBody ? input.body : '',
+    headers: JSON.stringify(hasBody && input.contentType ? { 'Content-Type': input.contentType } : {}),
+  }
 }
 
 /**
- * Creates the ERP from a template (endpoints, auth modes, client fields with auto-fill) and its
- * first company, all at once. Returns endpoint ids by template key, for the connection test
- * and the first call.
+ * Creates (first call) or updates (later attempts) the API, its first company and the first
+ * request, so the journey can test, fix and test again without duplicates.
  */
-export async function installErpTemplate(slug: string, company: CompanyInput): Promise<Result> {
+export async function saveFirstSetup(input: SetupInput, ids: SetupIds | null): Promise<{ error: string } | SetupIds> {
   await requireAdmin()
-  const tpl = templateBySlug(slug)
-  if (!tpl) return { error: 'Modelo desconhecido' }
-  const parsed = CompanyInput.safeParse(company)
+  const parsed = SetupInput.safeParse(input)
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
-  if (await prisma.eRP.findUnique({ where: { name: tpl.name } })) {
-    return { error: `Já existe um ERP "${tpl.name}". Cadastre a empresa em Empresas → Nova Empresa.` }
+  const data = parsed.data
+  const auth = authFor(data)
+  const baseUrl = data.baseUrl.replace(/\/+$/, '')
+
+  if (ids) {
+    await prisma.$transaction([
+      prisma.eRP.update({ where: { id: ids.erpId }, data: { name: data.name, authTemplate: auth.authTemplate } }),
+      prisma.company.update({ where: { id: ids.companyId }, data: { name: data.name, baseUrl, authType: auth.authType, authConfig: auth.authConfig } }),
+      prisma.endpoint.update({ where: { id: ids.endpointId }, data: endpointFor(data) }),
+    ])
+    revalidatePath('/', 'layout')
+    return ids
   }
 
+  if (await prisma.eRP.findUnique({ where: { name: data.name } })) return { error: `Já existe uma API chamada "${data.name}".` }
   const out = await prisma.$transaction(async (tx) => {
-    const erp = await tx.eRP.create({ data: { name: tpl.name } })
-    const endpointIds: Record<string, number> = {}
-    for (const [i, e] of tpl.endpoints.entries()) {
-      const { key, ...data } = e
-      endpointIds[key] = (await tx.endpoint.create({ data: { ...data, erpId: erp.id, sortOrder: i } })).id
-    }
-    const modes = tpl.authModes.map(({ tokenEndpoint, ...m }) => ({ ...m, ...(tokenEndpoint ? { tokenEndpointId: endpointIds[tokenEndpoint] } : {}) }))
-    const authTemplate = modes.length === 1 && modes[0].id === 'default' ? (({ id: _id, ...rest }) => rest)(modes[0]) : modes
-    await tx.eRP.update({ where: { id: erp.id }, data: { authTemplate } })
-    await tx.eRPFieldSchema.createMany({
-      data: tpl.fieldSchemas.map(({ source, ...f }, i) => ({ ...f, erpId: erp.id, sortOrder: i, sourceEndpointId: source ? endpointIds[source] : null })),
+    const erp = await tx.eRP.create({ data: { name: data.name, authTemplate: auth.authTemplate } })
+    const endpoint = await tx.endpoint.create({ data: { ...endpointFor(data), erpId: erp.id, sortOrder: 0 } })
+    const company = await tx.company.create({
+      data: { name: data.name, erpId: erp.id, baseUrl, environments: [], authType: auth.authType, authConfig: auth.authConfig, notes: '' },
     })
-    const co = await tx.company.create({
-      data: {
-        name: parsed.data.name, erpId: erp.id, baseUrl: parsed.data.baseUrl.replace(/\/+$/, ''), environments: [],
-        authType: modes[0].type, authConfig: authConfigFor(modes, parsed.data.credentials), notes: '',
-      },
-    })
-    return { erpId: erp.id, companyId: co.id, endpointIds }
+    return { erpId: erp.id, companyId: company.id, endpointId: endpoint.id }
   })
-  await recordAudit('create', 'erp', out.erpId, tpl.name)
+  await recordAudit('create', 'erp', out.erpId, data.name)
   revalidatePath('/', 'layout')
   return out
-}
-
-/** Fixes the company's name, URL or credentials after a failed connection test. */
-export async function updateSetupCompany(companyId: number, company: CompanyInput): Promise<{ error: string } | { ok: true }> {
-  await requireAdmin()
-  const parsed = CompanyInput.safeParse(company)
-  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
-  const co = await prisma.company.findUniqueOrThrow({ where: { id: companyId }, select: { erp: { select: { authTemplate: true } } } })
-  const t = co.erp.authTemplate
-  const modes = (Array.isArray(t) ? t : t && typeof t === 'object' && 'type' in t ? [{ id: 'default', ...t }] : []) as { id: string; type: string; tokenEndpointId?: number; tokenPath?: string }[]
-  await prisma.company.update({
-    where: { id: companyId },
-    data: { name: parsed.data.name, baseUrl: parsed.data.baseUrl.replace(/\/+$/, ''), authConfig: authConfigFor(modes, parsed.data.credentials) },
-  })
-  revalidatePath('/', 'layout')
-  return { ok: true }
 }

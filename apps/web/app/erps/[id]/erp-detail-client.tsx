@@ -518,7 +518,7 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
           <Input value={epPath} onChange={(e) => setEpPath(e.target.value)} placeholder="/api/v1/clients/{client_id}" style={{ fontFamily: 'monospace', fontSize: 12 }} required />
 
           <label style={labelStyle}>Body Template (JSON)</label>
-          <JsonTextarea value={epBody} onChange={setEpBody} placeholder='{"cpf": "{cpf}"}' rows={5} />
+          <JsonTextarea value={epBody} onChange={setEpBody} placeholder='{"id": "{id}"}' rows={5} />
 
           <label style={labelStyle}>Headers Extras (JSON)</label>
           <JsonTextarea value={epHeaders} onChange={setEpHeaders} rows={3} />
@@ -642,7 +642,7 @@ export function ERPDetailClient({ erp }: { erp: ERP }) {
                 <Input
                   value={fsResponsePath}
                   onChange={(e) => setFsResponsePath(e.target.value)}
-                  placeholder="registros[0].cnpj_cpf"
+                  placeholder="data[0].document"
                   style={{ fontFamily: 'monospace' }}
                 />
               </>

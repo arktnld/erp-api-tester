@@ -4,7 +4,7 @@ import { bodyError, connected } from './connection-check'
 const r = (statusCode: number, body: unknown) => ({ statusCode, durationMs: 1, responseBody: typeof body === 'string' ? body : JSON.stringify(body) })
 
 describe('connection check', () => {
-  it('MK refusing with HTTP 200 is not connected, and the message comes through', () => {
+  it('an API refusing with HTTP 200 is not connected, and the message comes through', () => {
     const mk = { Mensagem: 'Token não localizado.', 'Num. ERRO': '002', status: 'ERRO' }
     expect(connected(r(200, mk), 'Token')).toBe(false)
     expect(bodyError(mk)).toBe('Token não localizado.')

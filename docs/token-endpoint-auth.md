@@ -2,7 +2,7 @@
 
 ## Problema
 
-Alguns ERPs (ex: MKSolutions) exigem autenticação dinâmica: um token obtido via requisição que expira e precisa ser renovado. O sistema atual só suporta tokens estáticos.
+Algumas APIs exigem autenticação dinâmica: um token obtido via requisição que expira e precisa ser renovado. O sistema atual só suporta tokens estáticos.
 
 ## Solução
 

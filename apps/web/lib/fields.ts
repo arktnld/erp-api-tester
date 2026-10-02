@@ -21,7 +21,7 @@ export function mergeFields(
   if (company.authType === 'token_endpoint') {
     const rawCfg = (company.authConfig ?? {}) as Record<string, unknown>
     // Keyed multi-mode config: prefer the mode that actually has credentials —
-    // the first declared mode is often left blank (e.g. a Voalle company on the legacy
+    // the first declared mode is often left blank (e.g. a company on a legacy
     // flow fills only the password grant, never client_credentials).
     const modeCfgs = Object.values(rawCfg).filter(v => typeof v === 'object' && v !== null && !Array.isArray(v))
     const cfg = (modeCfgs.length > 0

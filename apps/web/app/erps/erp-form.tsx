@@ -34,7 +34,7 @@ export function ERPForm({ erp, onSuccess }: ERPFormProps) {
       <Input
         value={name}
         onChange={(e) => setName(e.target.value)}
-        placeholder="SAP, TOTVS Protheus, IXCSoft..."
+        placeholder="SAP, TOTVS Protheus, Minha API..."
         required
       />
       <Button

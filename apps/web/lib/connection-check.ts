@@ -6,7 +6,7 @@ export type Exec = { statusCode: number; durationMs: number; responseBody: strin
 
 export const parse = (body: string): unknown => { try { return JSON.parse(body) } catch { return null } }
 
-/** ERPs that answer 200 to a refused request (MK: {"status":"ERRO","Mensagem":"Token não localizado."}). */
+/** APIs that answer 200 to a refused request, e.g. {"status":"ERRO","Mensagem":"Token não localizado."}. */
 export function bodyError(json: unknown): string | null {
   if (!json || typeof json !== 'object' || Array.isArray(json)) return null
   const b = json as Record<string, unknown>

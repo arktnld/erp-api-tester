@@ -47,7 +47,7 @@ describe('buildAuthBodyFields', () => {
 })
 
 describe('getModeCredentials', () => {
-  // Mirrors the SGP ERP: body_fields ('default') + basic ('basic')
+  // An API with body_fields ('default') plus basic ('basic') on a few endpoints
   const modeIds = ['default', 'basic']
   const keyed = {
     default: { app: 'cortex', token: 'tok123' },
@@ -92,7 +92,7 @@ describe('getModeCredentials', () => {
 })
 
 describe('pickModeConfig', () => {
-  // Mirrors Voalle: two token_endpoint grants, only one filled per company
+  // Two token_endpoint grants (client_credentials, password), only one filled per company
   const modeIds = ['client_credentials', 'password']
   const ccFilled = { tokenEndpointId: 1, tokenPath: 'access_token', params: { CLIENT_ID: 'abc', CLIENT_SECRET: 's' } }
   const ccBlank = { tokenEndpointId: 1, tokenPath: 'access_token', params: { CLIENT_ID: '', CLIENT_SECRET: '' } }
@@ -230,22 +230,22 @@ describe('token lifetime', async () => {
 })
 
 describe('resolveAuth', () => {
-  const sgp = [
+  const twoModes = [
     { id: 'default', type: 'body_fields', label: 'Token + app', fields: [{ key: 'token', label: 'Token' }, { key: 'app', label: 'App' }] },
     { id: 'basic', type: 'basic', label: 'Basic', fields: [{ key: 'username', label: 'Usuário' }, { key: 'password', label: 'Senha' }] },
   ]
 
   it('uses the endpoint mode when it names one, else the first mode with credentials', () => {
     const cfg = { default: { token: 't', app: 'a' }, basic: { username: 'u', password: 'p' } }
-    expect(resolveAuth(sgp, cfg)?.mode.id).toBe('default')
-    expect(resolveAuth(sgp, cfg, 'basic')?.creds).toEqual({ username: 'u', password: 'p' })
-    expect(resolveAuth(sgp, { default: { token: '', app: '' }, basic: { username: 'u', password: 'p' } })?.mode.id).toBe('basic')
+    expect(resolveAuth(twoModes, cfg)?.mode.id).toBe('default')
+    expect(resolveAuth(twoModes, cfg, 'basic')?.creds).toEqual({ username: 'u', password: 'p' })
+    expect(resolveAuth(twoModes, { default: { token: '', app: '' }, basic: { username: 'u', password: 'p' } })?.mode.id).toBe('basic')
   })
 
   it('reads legacy flat credentials as the first mode, even after a second mode was added', () => {
-    const r = resolveAuth(sgp, { token: 't', app: 'a' })
+    const r = resolveAuth(twoModes, { token: 't', app: 'a' })
     expect(r).toMatchObject({ mode: { id: 'default' }, creds: { token: 't', app: 'a' }, keyed: false })
-    expect(resolveAuth(sgp, { token: 't', app: 'a' }, 'basic')?.creds).toEqual({})
+    expect(resolveAuth(twoModes, { token: 't', app: 'a' }, 'basic')?.creds).toEqual({})
   })
 
   it('takes type, token endpoint and token path from the ERP, not from the company copy', () => {

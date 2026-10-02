@@ -70,7 +70,7 @@ describe('executeRequest credential binding', () => {
     expect(sent.calls).toHaveLength(0)
   })
 
-  it('allows another port on the company host (Voalle: token on :45700, API on :45715)', async () => {
+  it('allows another port on the company host (token on :45700, API on :45715)', async () => {
     await executeRequest({ endpointId: 1, companyId: 1, customUrl: 'https://erp.example.com:45700/connect/token' })
     expect(sent.calls).toHaveLength(1)
   })
@@ -186,7 +186,7 @@ describe('executeRequest auth from the ERP template', () => {
     id: 5, name: 'C', baseUrl: 'https://erp.example.com', authType, environments: [],
     authConfig, erp: { name: 'ERP', authTemplate: erpTemplate },
   })
-  const sgp = [
+  const twoModes = [
     { id: 'default', type: 'body_fields', label: '', fields: [] },
     { id: 'basic', type: 'basic', label: '', fields: [] },
   ]
@@ -204,7 +204,7 @@ describe('executeRequest auth from the ERP template', () => {
   })
 
   it('sends Basic on an endpoint that names the basic mode, keeping {token}/{app} of the default mode', async () => {
-    companyState.override = company(sgp, { default: { token: 'tk', app: 'ap' }, basic: { username: 'u', password: 'p' } })
+    companyState.override = company(twoModes, { default: { token: 'tk', app: 'ap' }, basic: { username: 'u', password: 'p' } })
     endpointState.authMode = 'basic'
     await executeRequest({ endpointId: 1, companyId: 5 })
     expect(sent.calls[0].headers.Authorization).toBe(`Basic ${btoa('u:p')}`)

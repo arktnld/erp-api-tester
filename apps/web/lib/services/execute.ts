@@ -79,7 +79,7 @@ function tokenConfig(auth: ResolvedAuth): TokenEndpointConfig {
 
 /**
  * Hosts the company's credentials may be sent to: its base URL and registered environments.
- * Keyed by protocol + hostname, not port: ERPs like Voalle serve token and API on other
+ * Keyed by protocol + hostname, not port: some APIs serve token and data on other
  * ports of the same host (`:45700/connect/token`, `:45715/...`), set in the pathTemplate.
  */
 const hostKey = (u: URL) => `${u.protocol}//${u.hostname}`
@@ -269,13 +269,13 @@ export async function executeRequest(params: ExecuteParams): Promise<ExecuteResu
   // Auth values are added here from the ERP's current template (resolveAuth), not by mergeFields.
   const allFields = mergeFields(fields, null, fieldDefaults(erp.fieldSchemas))
 
-  // Company-wide auth, and the endpoint's own mode when it names one (e.g. SGP reboot via Basic).
+  // Company-wide auth, and the endpoint's own mode when it names one (e.g. a few endpoints on Basic).
   const baseAuth = resolveAuth(erp.authTemplate, company.authConfig, null, company.authType)
-  // Running a mode's own token endpoint (e.g. Voalle's password grant) uses that mode, not the default one.
+  // Running a mode's own token endpoint (e.g. an OAuth password grant) uses that mode, not the default one.
   const ownTokenMode = getAuthModes(erp.authTemplate).find((m) => m.type === 'token_endpoint' && m.tokenEndpointId === endpoint.id)
   const modeId = endpoint.authMode || ownTokenMode?.id
   const auth = modeId ? resolveAuth(erp.authTemplate, company.authConfig, modeId, company.authType) : baseAuth
-  // Body-field credentials stay available as {placeholders} (SGP keeps {token}/{app} on Basic endpoints).
+  // Body-field credentials stay available as {placeholders} (e.g. {token}/{app} still used on Basic endpoints).
   for (const a of [baseAuth, auth]) if (a?.mode.type === 'body_fields') Object.assign(allFields, stringCreds(a.creds))
 
   // Pre-auth: token_endpoint — obtain/reuse session token BEFORE substitution so {token} works in paths/bodies

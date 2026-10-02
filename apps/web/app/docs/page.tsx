@@ -248,7 +248,7 @@ export default function DocsPage() {
             </P>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, margin: '20px 0 24px' }}>
               {[
-                { label: 'ERP', desc: 'O sistema de gestão (IXCSoft, Omie, SAP…). Define os campos obrigatórios e os endpoints disponíveis para todas as empresas.' },
+                { label: 'ERP', desc: 'O sistema de gestão (SAP, TOTVS, Omie, uma API interna…). Define os campos obrigatórios e os endpoints disponíveis para todas as empresas.' },
                 { label: 'Empresa', desc: 'Um cliente que usa aquele ERP. Tem seu próprio endereço de API e tipo de autenticação.' },
                 { label: 'Cliente de teste', desc: 'Um conjunto de credenciais dentro de uma empresa. Útil para testar com múltiplas contas.' },
                 { label: 'Endpoint', desc: 'Uma rota da API com método, path e body. Usa {{campo}} para referenciar dados do cliente.' },

@@ -32,6 +32,9 @@ export const AUTH_TYPES: Record<string, { label: string; fixedKeys?: { key: stri
   },
 }
 
+/** Auth types the first-run journey offers (the rest are set up on the API page). */
+export const SETUP_AUTH_TYPES = ['none', 'bearer', 'basic', 'api_key'] as const
+
 export function getAuthModes(authTemplate: unknown): AuthModeConfig[] {
   if (!authTemplate || typeof authTemplate !== 'object') return []
   if (Array.isArray(authTemplate)) return authTemplate as AuthModeConfig[]
@@ -68,7 +71,7 @@ export function hasFilledCredentials(modeConfig: unknown): boolean {
  * Which key of a keyed authConfig ({ modeId: { ... } }) holds the active config,
  * or null when the config is the legacy flat format. The form writes every
  * declared mode, so "first mode wins" would pick blank credentials whenever a
- * company authenticates through a later mode (e.g. Voalle's password grant vs
+ * company authenticates through a later mode (e.g. an OAuth password grant vs
  * client_credentials) — the filled one wins instead.
  */
 function resolveModeKey(cfg: Record<string, unknown>, modeIds: string[]): string | null {
