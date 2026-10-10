@@ -4,10 +4,29 @@ export const ERPSchema = z.object({
   name: z.string().min(1, 'Nome obrigatório').max(100),
 })
 
+const HOSTNAME = /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i
+
+/** What is wrong with a base URL, in the user's words; null when it is usable. */
+export function baseUrlProblem(value: string): string | null {
+  const url = value.trim()
+  if (!/^https?:\/\//i.test(url)) return 'Comece com http:// ou https://'
+  if (/[\s'"`<>]/.test(url)) return 'Tire aspas e espaços do endereço'
+  let host: string
+  try { host = new URL(url).hostname } catch { return 'Endereço inválido (ex.: https://api.exemplo.com)' }
+  // new URL() accepts hosts like "erp.example.com'"; DNS does not, and every call then fails with ENOTFOUND.
+  if (!HOSTNAME.test(host) && !host.startsWith('[')) return 'Endereço inválido (ex.: https://api.exemplo.com)'
+  return null
+}
+
+/** Base URL of a company: http(s) with a real host name, stored trimmed and without the trailing slash. */
+export const BaseUrlSchema = z.string()
+  .superRefine((v, ctx) => { const problem = baseUrlProblem(v); if (problem) ctx.addIssue({ code: z.ZodIssueCode.custom, message: problem }) })
+  .transform((v) => v.trim().replace(/\/+$/, ''))
+
 export const CompanySchema = z.object({
   name: z.string().min(1, 'Nome obrigatório').max(100),
   erpId: z.number().int().positive(),
-  baseUrl: z.string().url('URL inválida'),
+  baseUrl: BaseUrlSchema,
   environments: z.string().default('[]'),
   authType: z.enum(['none', 'bearer', 'api_key', 'basic', 'custom_headers', 'body_fields', 'token_endpoint']),
   authConfig: z.string().default('{}'),

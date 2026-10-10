@@ -21,6 +21,17 @@ describe('CompanySchema', () => {
   it('rejects invalid url', () => {
     expect(() => CompanySchema.parse({ ...valid, baseUrl: 'not-a-url' })).toThrow()
   })
+
+  it('rejects a base URL with a stray quote or space in the host (every call would fail with ENOTFOUND)', () => {
+    for (const baseUrl of ["https://erp.example.com'", 'https://erp.example.com"', 'https://erp example.com', 'ftp://erp.example.com', 'https://']) {
+      expect(() => CompanySchema.parse({ ...valid, baseUrl }), baseUrl).toThrow()
+    }
+  })
+
+  it('accepts ports and paths, and stores the base URL trimmed and without the trailing slash', () => {
+    expect(CompanySchema.parse({ ...valid, baseUrl: '  https://erp.example.com:8443/api/v1/ ' }).baseUrl).toBe('https://erp.example.com:8443/api/v1')
+    expect(CompanySchema.parse({ ...valid, baseUrl: 'http://10.0.0.5:9000' }).baseUrl).toBe('http://10.0.0.5:9000')
+  })
   it('rejects invalid authType', () => {
     expect(() => CompanySchema.parse({ ...valid, authType: 'magic' })).toThrow()
   })

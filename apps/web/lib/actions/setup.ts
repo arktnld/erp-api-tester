@@ -6,6 +6,7 @@ import { requireAdmin } from '@/lib/require-role'
 import { recordAudit } from '@/lib/audit'
 import { AUTH_TYPES, SETUP_AUTH_TYPES } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import { BaseUrlSchema } from './schemas'
 
 // First-run journey (/setup): any HTTP API (REST, SOAP, GraphQL) from its URL, auth and one request.
 
@@ -13,7 +14,7 @@ const METHODS = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as const
 
 const SetupInput = z.object({
   name: z.string().trim().min(1, 'Dê um nome à API').max(100),
-  baseUrl: z.string().trim().url('URL base inválida (ex.: https://api.exemplo.com)').refine((u) => /^https?:\/\//.test(u), 'Use http:// ou https://'),
+  baseUrl: BaseUrlSchema,
   authType: z.enum(SETUP_AUTH_TYPES),
   credentials: z.record(z.string().max(2000)),
   method: z.enum(METHODS),
@@ -56,7 +57,7 @@ export async function saveFirstSetup(input: SetupInput, ids: SetupIds | null): P
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? 'Dados inválidos' }
   const data = parsed.data
   const auth = authFor(data)
-  const baseUrl = data.baseUrl.replace(/\/+$/, '')
+  const baseUrl = data.baseUrl
 
   if (ids) {
     await prisma.$transaction([

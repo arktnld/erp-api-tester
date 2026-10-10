@@ -15,7 +15,7 @@ function fakeRequest(options: { hostname: string; path: string; headers: Record<
     destroy() {},
   })
   const req = Object.assign(new EventEmitter(), {
-    write() {},
+    write(chunk: unknown) { (sent.calls[sent.calls.length - 1] as { body?: string }).body = String(chunk) },
     setTimeout() {},
     end() {
       onResponse(res)
@@ -30,11 +30,11 @@ vi.mock('node:https', () => ({ request: fakeRequest }))
 
 const history = vi.hoisted(() => ({ create: vi.fn(async () => ({})) }))
 vi.mock('@/lib/repo/history', () => ({ recordExecution: history.create }))
-const endpointState = vi.hoisted(() => ({ authMode: null as string | null }))
+const endpointState = vi.hoisted(() => ({ authMode: null as string | null, bodyTemplate: '' }))
 vi.mock('@/lib/repo/endpoints', () => ({
   getEndpoint: async (id: number) => id === 2
     ? { id: 2, name: 'Token', method: 'POST', pathTemplate: '/oauth/token', bodyTemplate: '', headers: '{}', authMode: null }
-    : { id: 1, name: 'E', method: 'GET', pathTemplate: '/x?t={token}&a={app}', bodyTemplate: '', headers: '{}', authMode: endpointState.authMode },
+    : { id: 1, name: 'E', method: 'GET', pathTemplate: '/x?t={token}&a={app}', bodyTemplate: endpointState.bodyTemplate, headers: '{}', authMode: endpointState.authMode },
 }))
 const companyState = vi.hoisted(() => ({ override: null as null | Record<string, unknown>, saved: [] as unknown[], cookies: new Map<number, unknown>() }))
 vi.mock('@/lib/repo/companies', () => ({
@@ -60,6 +60,7 @@ beforeEach(() => {
   companyState.saved = []
   companyState.cookies.clear()
   endpointState.authMode = null
+  endpointState.bodyTemplate = ''
   history.create.mockClear()
 })
 
@@ -219,6 +220,31 @@ describe('executeRequest auth from the ERP template', () => {
     await executeRequest({ endpointId: 1, companyId: 5 })
     expect(sent.calls[0].headers.Authorization).toBe(`Basic ${btoa('u:p')}`)
     expect(sent.calls[0].path).toContain('t=tk')
+  })
+
+  it('leaves out body fields of an auth mode the company did not fill (signs in with Basic only)', async () => {
+    const template = [
+      { id: 'default', type: 'body_fields', label: '', fields: [{ key: 'app', label: 'App' }, { key: 'token', label: 'Token' }] },
+      { id: 'basic', type: 'basic', label: '', fields: [{ key: 'username', label: 'U' }, { key: 'password', label: 'P' }] },
+    ]
+    companyState.override = company(template, { default: { token: '', app: '' }, basic: { username: 'u', password: 'p' } })
+    endpointState.bodyTemplate = '{"token": "{token}", "app": "{app}", "cpfcnpj": "{cpfcnpj}", "limit": 2}'
+    await executeRequest({ endpointId: 1, companyId: 5, inlineFields: { cpfcnpj: '123' } })
+    const call = sent.calls[0] as { headers: Record<string, string>; body?: string }
+    expect(call.headers.Authorization).toBe(`Basic ${btoa('u:p')}`)
+    // "{token}" sent as text would be read by the API as a wrong token
+    expect(JSON.parse(call.body!)).toEqual({ cpfcnpj: '123', limit: 2 })
+  })
+
+  it('keeps the body fields when the company did fill that mode', async () => {
+    const template = [
+      { id: 'default', type: 'body_fields', label: '', fields: [{ key: 'app', label: 'App' }, { key: 'token', label: 'Token' }] },
+      { id: 'basic', type: 'basic', label: '', fields: [] },
+    ]
+    companyState.override = company(template, { default: { token: 'tk', app: 'ap' }, basic: { username: '', password: '' } })
+    endpointState.bodyTemplate = '{"token": "{token}", "app": "{app}"}'
+    await executeRequest({ endpointId: 1, companyId: 5 })
+    expect(JSON.parse((sent.calls[0] as { body?: string }).body!)).toEqual({ token: 'tk', app: 'ap' })
   })
 
   it('first mode bearer with credentials stored per mode still sends the header', async () => {

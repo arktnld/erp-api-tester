@@ -6,6 +6,7 @@ import { Plus, Pencil, Trash2, ChevronRight, X } from 'lucide-react'
 import { PageHeader } from '@/components/ui/page-header'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { baseUrlProblem } from '@/lib/actions/schemas'
 import { Sheet } from '@/components/ui/sheet'
 import { DeleteImpactDialog, plural } from '@/components/ui/delete-impact-dialog'
 import { createCompany, updateCompany, deleteCompany, getCompanyDeletionImpact } from '@/lib/actions/companies'
@@ -81,6 +82,9 @@ export function CompaniesClient({
   const [environments, setEnvironments] = useState<Environment[]>([])
   const [newEnvName, setNewEnvName] = useState('')
   const [newEnvUrl, setNewEnvUrl] = useState('')
+  // Shown under the field as soon as there is something typed; also blocks saving.
+  const urlProblem = baseUrl.trim() ? baseUrlProblem(baseUrl) : null
+  const envProblem = newEnvUrl.trim() ? baseUrlProblem(newEnvUrl) : null
   const [authType, setAuthType] = useState('none')
   const [authConfig, setAuthConfig] = useState('{}')
   const [tokenEpId, setTokenEpId] = useState('')
@@ -163,8 +167,8 @@ export function CompaniesClient({
   }
 
   const addEnvironment = () => {
-    if (!newEnvName.trim() || !newEnvUrl.trim()) return
-    const updated = [...environments, { name: newEnvName.trim(), url: newEnvUrl.trim() }]
+    if (!newEnvName.trim() || !newEnvUrl.trim() || baseUrlProblem(newEnvUrl)) return
+    const updated = [...environments, { name: newEnvName.trim(), url: newEnvUrl.trim().replace(/\/+$/, '') }]
     setEnvironments(updated)
     setNewEnvName(nextEnvSuggestion(updated))
     setNewEnvUrl('')
@@ -287,6 +291,7 @@ export function CompaniesClient({
         <form
           onSubmit={(e) => {
             e.preventDefault()
+            if (urlProblem) return
             startTransition(async () => {
               const environmentsJson = JSON.stringify(environments)
               const selectedErp = erps.find((e) => e.id === Number(erpId))
@@ -382,8 +387,12 @@ export function CompaniesClient({
             value={baseUrl}
             onChange={(e) => setBaseUrl(e.target.value)}
             placeholder="https://api.empresa.com.br"
+            aria-invalid={!!urlProblem}
+            aria-describedby={urlProblem ? 'base-url-problem' : undefined}
+            style={urlProblem ? { borderColor: 'var(--status-error)' } : undefined}
             required
           />
+          {urlProblem && <p id="base-url-problem" role="alert" style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--status-error)' }}>{urlProblem}</p>}
 
           <label style={labelStyle}>URLs Adicionais</label>
           {environments.length > 0 && (
@@ -414,13 +423,15 @@ export function CompaniesClient({
               value={newEnvUrl}
               onChange={(e) => setNewEnvUrl(e.target.value)}
               placeholder="https://hom.empresa.com.br"
-              style={{ flex: 1 }}
+              aria-invalid={!!envProblem}
+              style={{ flex: 1, ...(envProblem ? { borderColor: 'var(--status-error)' } : {}) }}
               onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addEnvironment() } }}
             />
             <Button type="button" variant="ghost" onClick={addEnvironment} style={{ flexShrink: 0 }}>
               <Plus size={13} />
             </Button>
           </div>
+          {envProblem && <p role="alert" style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--status-error)' }}>{envProblem}</p>}
 
           {(() => {
             const selectedErp = erps.find((e) => e.id === Number(erpId))
