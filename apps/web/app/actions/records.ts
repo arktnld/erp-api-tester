@@ -105,6 +105,8 @@ export async function getRecordForEdit(id: number) {
               id: true,
               name: true,
               endpoints: { orderBy: { sortOrder: 'asc' } },
+              authTemplate: true,
+              fieldSchemas: { select: { fieldName: true, defaultValue: true } },
             },
           },
         },

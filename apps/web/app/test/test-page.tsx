@@ -9,7 +9,7 @@ import { TestResponse } from './components/test-response'
 import { SessionStrip } from './components/session-strip'
 import type { SessionInfo } from './components/session-strip'
 import { substitute, generateExecutedCurl, findErpIdForCompany } from './lib/utils'
-import { fieldDefaults, mergeFields } from '@/lib/fields'
+import { fieldDefaults, mergeFields, resolveBodyTemplate } from '@/lib/fields'
 import { getAuthModes, pickModeConfig } from '@/lib/auth'
 import type { ERP, Environment, ExecuteResponse } from './lib/types'
 
@@ -222,9 +222,9 @@ export function TestPage({
   const companyEnvironments: Environment[] = company ? (company.environments ?? []) : []
   const activeUrl = environmentUrl ?? company?.baseUrl ?? ''
   const fields = client ? client.fieldsData : {}
-  const allFields = mergeFields(fields as Record<string, string>, company, fieldDefaults(erp?.fieldSchemas))
+  const allFields = mergeFields(fields as Record<string, string>, company, fieldDefaults(erp?.fieldSchemas), { authTemplate: erp?.authTemplate, endpoint })
   const resolvedUrl = endpoint && company ? `${activeUrl}${substitute(endpoint.pathTemplate, allFields)}` : ''
-  const resolvedBody = endpoint?.bodyTemplate?.trim() ? substitute(endpoint.bodyTemplate, allFields) : ''
+  const resolvedBody = endpoint?.bodyTemplate?.trim() ? resolveBodyTemplate(endpoint.bodyTemplate, allFields, erp?.authTemplate) : ''
   const needsClient = endpoint?.requiresClient !== false
   const canExecute = !!(erpId && companyId && endpointId && (!needsClient || clientId))
   const endpointHeaders = (() => { try { return JSON.parse(endpoint?.headers || '{}') as Record<string, string> } catch { return {} } })()
@@ -244,13 +244,10 @@ export function TestPage({
         return new Set<string>()
     }
   })()
-  // Body field values to mask (body_fields auth injects them literally into the body)
+  const publicFields = mergeFields(fields as Record<string, string>, null, fieldDefaults(erp?.fieldSchemas))
+  // Include token-endpoint credentials as well as body-field credentials.
   const sensitiveValues: Set<string> = new Set(
-    company?.authType === 'body_fields' && company?.authConfig
-      ? Object.values(company.authConfig as Record<string, unknown>).filter(
-          (v) => typeof v === 'string' && (v as string).length > 4
-        ) as string[]
-      : []
+    Object.entries(allFields).filter(([key, value]) => value !== '' && value !== publicFields[key]).map(([, value]) => value)
   )
 
   const execute = async () => {
@@ -404,22 +401,22 @@ export function TestPage({
           companyEnvironments={companyEnvironments}
           tokenAcquired={companyId ? (tokenAcquired[companyId] ?? false) : false}
           onErpChange={(id) => { setErpId(id); setCompanyId(null); setEndpointId(null); setClientId(null); setResponse(null) }}
-          onCompanyChange={(id) => { setCompanyId(id); setClientId(null); setEnvironmentUrl(null) }}
-          onEndpointChange={setEndpointId}
-          onClientChange={setClientId}
-          onEnvironmentChange={setEnvironmentUrl}
+          onCompanyChange={(id) => { setCompanyId(id); setClientId(null); setEnvironmentUrl(null); setResponse(null) }}
+          onEndpointChange={(id) => { setEndpointId(id); setResponse(null) }}
+          onClientChange={(id) => { setClientId(id); setResponse(null) }}
+          onEnvironmentChange={(url) => { setEnvironmentUrl(url); setResponse(null) }}
           onObtainToken={obtainToken}
         />
         <TestRequest
           response={response}
-          resolvedBody={resolvedBody}
+          resolvedBody={response?.method ? (response.requestBody ?? '') : resolvedBody}
           bodyMode={bodyMode}
           rawBody={rawBody}
           editorLanguage={editorLanguage}
           sensitiveValues={sensitiveValues}
           sensitiveHeaderKeys={sensitiveHeaderKeys}
-          onBodyModeChange={setBodyMode}
-          onRawBodyChange={setRawBody}
+          onBodyModeChange={(mode) => { setBodyMode(mode); setResponse(null) }}
+          onRawBodyChange={(body) => { setRawBody(body); setResponse(null) }}
         />
         <TestResponse
           response={response}

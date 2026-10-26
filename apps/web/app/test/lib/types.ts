@@ -1,5 +1,6 @@
 export type Endpoint = {
   id: number
+  authMode?: string | null
   name: string
   method: string
   pathTemplate: string

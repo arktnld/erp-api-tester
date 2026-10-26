@@ -65,6 +65,17 @@ beforeEach(() => {
 })
 
 describe('executeRequest credential binding', () => {
+  it('resolves OAuth placeholders in an edited raw body with stored credentials', async () => {
+    companyState.override = {
+      id: 1, name: 'C', baseUrl: 'https://erp.example.com', authType: 'token_endpoint', environments: [],
+      authConfig: { tokenEndpointId: 2, tokenPath: 'access_token', params: { CLIENT_ID: 'actual-id', PASSWORD: 'actual-password' } },
+      erp: { authTemplate: null },
+    }
+    sent.handler = () => ({ status: 200, body: '{"access_token":"T"}' })
+    const result = await executeRequest({ endpointId: 2, companyId: 1, rawBody: '{"client_id":"{CLIENT_ID}","password":"{PASSWORD}"}', revealSecrets: true })
+    expect(JSON.parse(result.requestBody!)).toEqual({ client_id: 'actual-id', password: 'actual-password' })
+    expect(sent.calls).toHaveLength(1)
+  })
   it('refuses to send company credentials to a customUrl on another host', async () => {
     await expect(executeRequest({ endpointId: 1, companyId: 1, customUrl: 'https://attacker.example.net/x' }))
       .rejects.toBeInstanceOf(ValidationError)

@@ -1,7 +1,7 @@
-import type { Endpoint, Company, ExecuteResponse } from './types'
+import type { Endpoint, ExecuteResponse } from './types'
 import { substitute, tryPrettyJson } from '@/lib/utils'
-import { buildAuthHeaders } from '@/lib/auth'
-import { mergeFields } from '@/lib/fields'
+import { buildAuthHeaders, buildAuthHeadersForMode, getAuthModes, resolveAuth, stringCreds } from '@/lib/auth'
+import { mergeFields, resolveBodyTemplate } from '@/lib/fields'
 export { substitute, tryPrettyJson }
 
 /** Copy the request returned by the executor, including its permission-based masking. */
@@ -20,35 +20,33 @@ export function generateExecutedCurl(request: Pick<ExecuteResponse, 'method' | '
 
 export function generateCurl(
   endpoint: Endpoint,
-  company: Pick<Company, 'baseUrl' | 'authType' | 'authConfig'>,
+  company: { baseUrl: string; authType: string; authConfig: unknown },
   fields: Record<string, string>,
   customBody?: string,
-  customUrl?: string
+  customUrl?: string,
+  context?: { authTemplate: unknown; defaults?: Record<string, string> }
 ): string {
-  const allFields = mergeFields(fields, company)
+  const allFields = mergeFields(fields, company, context?.defaults, context ? { ...context, endpoint } : undefined)
   const url = customUrl?.trim() || `${company.baseUrl}${substitute(endpoint.pathTemplate, allFields)}`
-  const parts: string[] = [`curl -X ${endpoint.method} '${url}'`]
 
-  const authHeaders = buildAuthHeaders(company)
-  for (const [k, v] of Object.entries(authHeaders)) {
-    parts.push(`  -H '${k}: ${v}'`)
-  }
+  const ownMode = getAuthModes(context?.authTemplate).find((m) => m.type === 'token_endpoint' && m.tokenEndpointId === endpoint.id)
+  const auth = resolveAuth(context?.authTemplate, company.authConfig, endpoint.authMode || ownMode?.id, company.authType)
+  const authHeaders = context
+    ? (auth ? buildAuthHeadersForMode(auth.mode.type, stringCreds(auth.creds)) : {})
+    : buildAuthHeaders(company)
+  const requestHeaders = { ...authHeaders }
 
   try {
     const endpointHeaders = JSON.parse(endpoint.headers || '{}') as Record<string, string>
     for (const [k, v] of Object.entries(endpointHeaders)) {
-      parts.push(`  -H '${k}: ${v}'`)
+      requestHeaders[k] = substitute(v, allFields)
     }
   } catch {}
 
-  const body = customBody
+  const body = customBody != null
     ? substitute(customBody, allFields)
-    : (endpoint.bodyTemplate?.trim() ? substitute(endpoint.bodyTemplate, allFields) : '')
-  if (body) {
-    parts.push(`  -d '${body}'`)
-  }
-
-  return parts.join(' \\\n')
+    : (endpoint.bodyTemplate?.trim() ? resolveBodyTemplate(endpoint.bodyTemplate, allFields, context?.authTemplate) : '')
+  return generateExecutedCurl({ method: endpoint.method, url, requestHeaders, requestBody: body }) ?? ''
 }
 
 export function findErpIdForCompany(erps: { id: number; companies: { id: number }[] }[], companyId: number): number | null {

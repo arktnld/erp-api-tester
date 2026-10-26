@@ -2,7 +2,7 @@ import { substitute } from '@/lib/utils'
 import { contentTypeOf, guessContentType } from '@/lib/body-mode'
 import { bareHostname, publicOnlyLookup, validatePublicUrl } from '@/lib/security'
 import { buildAuthHeadersForMode, getAuthModes, isTokenFresh, resolveAuth, stringCreds, tokenCacheEntry, withTokenCacheFor, type ResolvedAuth } from '@/lib/auth'
-import { fieldDefaults, mergeFields } from '@/lib/fields'
+import { fieldDefaults, mergeFields, resolveBodyTemplate } from '@/lib/fields'
 import { getEndpoint } from '@/lib/repo/endpoints'
 import { getCompanyWithAuth, getCookieJar, getTestClientWithCompany, saveCookieJar, saveTokenCache } from '@/lib/repo/companies'
 import { recordExecution } from '@/lib/repo/history'
@@ -242,16 +242,6 @@ function httpFetch(
   })
 }
 
-/** A JSON body without the properties still holding their own {placeholder} for the given keys. */
-function dropUnfilledFields(body: string, keys: string[]): string {
-  if (!keys.length) return body
-  let doc: unknown
-  try { doc = JSON.parse(body) } catch { return body }
-  if (!doc || typeof doc !== 'object' || Array.isArray(doc)) return body
-  const kept = Object.entries(doc).filter(([k, v]) => !(keys.includes(k) && v === `{${k}}`))
-  return kept.length === Object.keys(doc).length ? body : JSON.stringify(Object.fromEntries(kept))
-}
-
 export async function executeRequest(params: ExecuteParams): Promise<ExecuteResult> {
   const { endpointId, clientId, companyId, environmentUrl, rawBody: customBody, inlineFields, customUrl, revealSecrets = false, userId, userEmail } = params
 
@@ -289,13 +279,6 @@ export async function executeRequest(params: ExecuteParams): Promise<ExecuteResu
   // Body-field credentials stay available as {placeholders} (e.g. {token}/{app} still used on Basic endpoints).
   for (const a of [baseAuth, auth]) if (a?.mode.type === 'body_fields') Object.assign(allFields, stringCreds(a.creds))
 
-  // A body_fields mode the company left blank (it signs in another way) must not leak into the body as
-  // the literal "{token}": the API would read that as a wrong token.
-  const unusedAuthKeys = getAuthModes(erp.authTemplate)
-    .filter((m) => m.type === 'body_fields')
-    .flatMap((m) => m.fields.map((f) => f.key))
-    .filter((key) => !allFields[key])
-
   // Pre-auth: token_endpoint — obtain/reuse session token BEFORE substitution so {token} works in paths/bodies
   const tokenAuth = auth?.mode.type === 'token_endpoint' ? auth : baseAuth?.mode.type === 'token_endpoint' ? baseAuth : null
   const tokenCfg = tokenAuth ? tokenConfig(tokenAuth) : null
@@ -325,9 +308,9 @@ export async function executeRequest(params: ExecuteParams): Promise<ExecuteResu
     const resolvedPath = substitute(endpoint.pathTemplate, allFields)
     const resolvedBody =
       customBody != null
-        ? customBody
+        ? substitute(customBody, allFields)
         : endpoint.bodyTemplate?.trim()
-          ? dropUnfilledFields(substitute(endpoint.bodyTemplate, allFields), unusedAuthKeys)
+          ? resolveBodyTemplate(endpoint.bodyTemplate, allFields, erp.authTemplate)
           : null
     const endpointHeaders: Record<string, string> = {}
     for (const [k, v] of Object.entries(rawEndpointHeaders)) endpointHeaders[k] = substitute(v, allFields)

@@ -7,9 +7,9 @@ import dynamic from 'next/dynamic'
 import { ArrowLeft, Plus, Trash2, Play, Share2, Check, ChevronDown, Copy, Terminal, Pencil, Download } from 'lucide-react'
 import { addBlock, updateBlock, deleteBlock, updateRecordNotes, getRecordShareToken } from '@/app/actions/records'
 import { useRole } from '@/lib/role-context'
-import { substitute, tryPrettyXml } from '@/lib/utils'
-import { mergeFields } from '@/lib/fields'
-import { buildAuthHeaders } from '@/lib/auth'
+import { tryPrettyXml } from '@/lib/utils'
+import { fieldDefaults, mergeFields, resolveBodyTemplate } from '@/lib/fields'
+import { generateCurl, generateExecutedCurl } from '@/app/test/lib/utils'
 import { JsonTree } from '@/app/test/components/json-tree'
 import { HeaderValue } from '@/app/test/components/header-value'
 
@@ -52,7 +52,7 @@ type Company = {
   authConfig: unknown
   environments: unknown
   testClients: TestClient[]
-  erp: { id: number; name: string; endpoints: Endpoint[] }
+  erp: { id: number; name: string; endpoints: Endpoint[]; authTemplate: unknown; fieldSchemas?: { fieldName: string; defaultValue: string }[] }
 }
 
 type RecordData = {
@@ -129,26 +129,6 @@ function JsonHighlight({ code }: { code: string }) {
 function extractTemplateVars(template: string): string[] {
   const matches = template.match(/\{\{(\w+)\}\}/g) ?? []
   return [...new Set(matches.map((m) => m.slice(2, -2)))]
-}
-
-function buildCurlCmd(
-  endpoint: Endpoint,
-  company: Pick<Company, 'baseUrl' | 'authType' | 'authConfig'>,
-  fields: Record<string, string>,
-  extraParams: Record<string, string> = {},
-): string {
-  const allFields = mergeFields({ ...fields, ...extraParams }, company)
-  const url = `${company.baseUrl}${substitute(endpoint.pathTemplate, allFields)}`
-  const parts = [`curl -X ${endpoint.method} '${url}'`]
-  const authHeaders = buildAuthHeaders(company)
-  for (const [k, v] of Object.entries(authHeaders)) parts.push(`  -H '${k}: ${v}'`)
-  try {
-    const h = JSON.parse(endpoint.headers || '{}') as Record<string, string>
-    for (const [k, v] of Object.entries(h)) parts.push(`  -H '${k}: ${v}'`)
-  } catch {}
-  const body = endpoint.bodyTemplate?.trim() ? substitute(endpoint.bodyTemplate, allFields) : ''
-  if (body) parts.push(`  -d '${body}'`)
-  return parts.join(' \\\n')
 }
 
 // ── Endpoint Select ──────────────────────────────────────────────────────────
@@ -302,6 +282,10 @@ function BlockEditor({
   const [endpointId, setEndpointId] = useState<number | null>(block.endpointId)
   const [clientId, setClientId] = useState<number | null>(block.clientId)
   type BlockResponse = {
+    method?: string
+    url?: string
+    requestBody?: string | null
+    requestHeaders?: Record<string, string>
     statusCode: number
     responseBody: string
     durationMs: number
@@ -338,14 +322,18 @@ function BlockEditor({
   const statusColor = !response ? 'var(--text-subtle)' : response.statusCode < 300 ? 'var(--status-success)' : 'var(--status-error)'
 
   const clientFields = client ? (client.fieldsData as Record<string, string> ?? {}) : {}
-  const allBodyFields = mergeFields({ ...clientFields, ...bodyParams }, company)
+  const previewContext = { authTemplate: company.erp.authTemplate, endpoint }
+  const defaults = fieldDefaults(company.erp.fieldSchemas)
+  const allBodyFields = mergeFields({ ...clientFields, ...bodyParams }, company, defaults, previewContext)
   const missingVars = endpoint?.bodyTemplate
     ? extractTemplateVars(endpoint.bodyTemplate).filter((v) => !(v in allBodyFields) || allBodyFields[v] === '')
     : []
   const hasBodyTemplate = !!(endpoint?.bodyTemplate?.trim())
-  const curlCmd = endpoint
-    ? buildCurlCmd(endpoint, company, clientFields, bodyParams)
-    : null
+  const curlCmd = response?.method && response.url && response.requestHeaders
+    ? generateExecutedCurl({ method: response.method, url: response.url, requestHeaders: response.requestHeaders, requestBody: response.requestBody ?? null })
+    : endpoint
+      ? generateCurl(endpoint, company, { ...clientFields, ...bodyParams }, bodyParams.__raw__, undefined, { authTemplate: company.erp.authTemplate, defaults })
+      : null
 
   const execute = async () => {
     if (!canExecute || executing) return
@@ -354,12 +342,12 @@ function BlockEditor({
       const rawBody = bodyParams.__raw__ !== undefined
         ? bodyParams.__raw__
         : Object.keys(bodyParams).length && endpoint?.bodyTemplate?.trim()
-          ? substitute(endpoint.bodyTemplate, mergeFields({ ...clientFields, ...bodyParams }, company))
+          ? resolveBodyTemplate(endpoint.bodyTemplate, allBodyFields, company.erp.authTemplate)
           : undefined
       const res = await fetch('/api/execute', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ endpointId, clientId: needsClient ? clientId : null, companyId: company.id, ...(rawBody ? { rawBody } : {}) }),
+        body: JSON.stringify({ endpointId, clientId: needsClient ? clientId : null, companyId: company.id, ...(rawBody !== undefined ? { rawBody } : {}) }),
       })
       const data = await res.json()
       setResponse(data)
@@ -449,12 +437,12 @@ function BlockEditor({
         {/* ── Header ── */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '10px 14px 6px' }}>
 
-          <EndpointSelect endpoints={endpoints} value={endpointId} onChange={setEndpointId} />
+          <EndpointSelect endpoints={endpoints} value={endpointId} onChange={(id) => { setEndpointId(id); setBodyParams({}); setResponse(null) }} />
 
           {needsClient && endpointId && (
             <select
               value={clientId ?? ''}
-              onChange={(e) => setClientId(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) => { setClientId(e.target.value ? Number(e.target.value) : null); setResponse(null) }}
               style={{ padding: '5px 8px', fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'var(--surface-2)', color: clientId ? 'var(--text)' : 'var(--text-subtle)', width: 150, flexShrink: 0 }}
             >
               <option value="">Cliente…</option>
@@ -507,7 +495,9 @@ function BlockEditor({
 
         {/* ── BODY PARAMS ── */}
         {hasBodyTemplate && showBody && (() => {
-          const resolved = substitute(endpoint!.bodyTemplate, allBodyFields)
+          const resolved = response?.method
+            ? (response.requestBody ?? '')
+            : resolveBodyTemplate(endpoint!.bodyTemplate, allBodyFields, company.erp.authTemplate)
           const rawVal = bodyParams.__raw__ ?? resolved
           return (
             <>
@@ -515,7 +505,7 @@ function BlockEditor({
               <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)' }}>
                 <textarea
                   value={rawVal}
-                  onChange={(e) => setBodyParams({ __raw__: e.target.value })}
+                  onChange={(e) => { setBodyParams({ __raw__: e.target.value }); setResponse(null) }}
                   rows={6}
                   style={{ width: '100%', padding: '8px 10px', fontSize: 11, fontFamily: 'monospace', lineHeight: 1.6, borderRadius: 6, border: '1px solid var(--border)', backgroundColor: 'var(--surface-2)', color: 'var(--text)', resize: 'vertical', outline: 'none', boxSizing: 'border-box' }}
                 />
