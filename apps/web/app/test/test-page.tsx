@@ -8,7 +8,7 @@ import { TestRequest } from './components/test-request'
 import { TestResponse } from './components/test-response'
 import { SessionStrip } from './components/session-strip'
 import type { SessionInfo } from './components/session-strip'
-import { substitute, generateCurl, findErpIdForCompany } from './lib/utils'
+import { substitute, generateExecutedCurl, findErpIdForCompany } from './lib/utils'
 import { fieldDefaults, mergeFields } from '@/lib/fields'
 import { getAuthModes, pickModeConfig } from '@/lib/auth'
 import type { ERP, Environment, ExecuteResponse } from './lib/types'
@@ -426,7 +426,7 @@ export function TestPage({
           loading={loading}
           erpName={erp?.name}
           companyName={company?.name}
-          curlString={endpoint && company ? generateCurl(endpoint, { ...company, baseUrl: activeUrl }, allFields, bodyMode === 'raw' ? rawBody : undefined, customUrl ?? undefined) : undefined}
+          curlString={response ? generateExecutedCurl(response) : undefined}
         />
         <SessionStrip
           sessions={sessionInfos}

@@ -1,8 +1,22 @@
-import type { Endpoint, Company } from './types'
+import type { Endpoint, Company, ExecuteResponse } from './types'
 import { substitute, tryPrettyJson } from '@/lib/utils'
 import { buildAuthHeaders } from '@/lib/auth'
 import { mergeFields } from '@/lib/fields'
 export { substitute, tryPrettyJson }
+
+/** Copy the request returned by the executor, including its permission-based masking. */
+export function generateExecutedCurl(request: Pick<ExecuteResponse, 'method' | 'url' | 'requestHeaders' | 'requestBody'>): string | undefined {
+  if (!request.method || !request.url) return undefined
+  const quote = (value: string) => "'" + value.replace(/'/g, "'\\''") + "'"
+  const parts = [`curl -X ${request.method} ${quote(request.url)}`]
+  for (const [key, value] of Object.entries(request.requestHeaders)) {
+    parts.push(`  -H ${quote(`${key}: ${value}`)}`)
+  }
+  if (request.requestBody != null && request.requestBody !== '') {
+    parts.push(`  -d ${quote(request.requestBody)}`)
+  }
+  return parts.join(' \\\n')
+}
 
 export function generateCurl(
   endpoint: Endpoint,
