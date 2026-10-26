@@ -1,6 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { copyText } from '@/lib/clipboard'
+
+import { useEffect, useState } from 'react'
 import { Pencil, KeyRound, Trash2 } from 'lucide-react'
 import { getRoleLabel, type Role } from '@/lib/roles'
 import { Avatar } from '@/components/ui/avatar'
@@ -189,12 +191,13 @@ export function UsersSection({ users: initialUsers, currentUserId }: { users: Us
 /** Shows a generated password once, with a copy button. */
 export function NewPassword({ password }: { password: string }) {
   const [copied, setCopied] = useState(false)
+  useEffect(() => { setCopied(false) }, [password])
   return (
     <div style={{ marginBottom: 16 }}>
       <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Senha gerada (só aparece agora):</div>
       <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
         <code style={{ flex: 1, padding: '8px 10px', fontSize: 14, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', userSelect: 'all' }}>{password}</code>
-        <Button variant="ghost" size="sm" onClick={() => { navigator.clipboard?.writeText(password); setCopied(true) }}>{copied ? 'Copiada' : 'Copiar'}</Button>
+        <Button type="button" variant="ghost" size="sm" onClick={() => { void copyText(password, () => { setCopied(true) }) }}>{copied ? 'Copiada' : 'Copiar'}</Button>
       </div>
     </div>
   )

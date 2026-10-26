@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
@@ -367,19 +369,7 @@ function BlockEditor({
   const copyCurl = () => {
     if (!curlCmd) return
     const done = () => { setCurlCopied(true); setTimeout(() => setCurlCopied(false), 1500) }
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(curlCmd).then(done).catch(() => fallbackCopyText(curlCmd, done))
-    } else {
-      fallbackCopyText(curlCmd, done)
-    }
-  }
-
-  const fallbackCopyText = (text: string, cb: () => void) => {
-    const ta = document.createElement('textarea')
-    ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'
-    document.body.appendChild(ta); ta.select()
-    try { document.execCommand('copy') } catch {}
-    document.body.removeChild(ta); cb()
+    void copyText(curlCmd, done)
   }
 
   let parsedJson: unknown = null
@@ -668,22 +658,7 @@ export function RecordDetailClient({ record: initial }: { record: RecordData }) 
     const token = await getRecordShareToken(initial.id)
     const url = `${window.location.origin}/records/${token}/view`
     const done = () => { setCopied(true); setTimeout(() => setCopied(false), 2000) }
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(done).catch(() => fallbackCopy(url, done))
-    } else {
-      fallbackCopy(url, done)
-    }
-  }
-
-  const fallbackCopy = (text: string, cb: () => void) => {
-    const ta = document.createElement('textarea')
-    ta.value = text
-    ta.style.cssText = 'position:fixed;opacity:0'
-    document.body.appendChild(ta)
-    ta.select()
-    try { document.execCommand('copy') } catch {}
-    document.body.removeChild(ta)
-    cb()
+    await copyText(url, done)
   }
 
   return (

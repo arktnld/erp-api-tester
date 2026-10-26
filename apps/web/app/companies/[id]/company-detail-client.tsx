@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useTransition, useState } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Plus, Pencil, Trash2, User, Copy, Check } from 'lucide-react'
@@ -35,27 +37,13 @@ type Company = {
   testClients: TestClient[]
 }
 
-function copyText(text: string) {
-  if (navigator.clipboard) {
-    return navigator.clipboard.writeText(text)
-  }
-  // Fallback para HTTP (sem HTTPS clipboard API)
-  const el = document.createElement('textarea')
-  el.value = text
-  el.style.cssText = 'position:fixed;opacity:0'
-  document.body.appendChild(el)
-  el.select()
-  document.execCommand('copy')
-  document.body.removeChild(el)
-  return Promise.resolve()
-}
-
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false)
   const hasLabel = label !== ''
 
   function handleCopy() {
-    copyText(value).then(() => {
+    copyText(value).then((copied) => {
+      if (!copied) return
       setCopied(true)
       setTimeout(() => setCopied(false), 1800)
     })

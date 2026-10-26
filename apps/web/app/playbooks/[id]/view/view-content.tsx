@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 
@@ -144,7 +146,7 @@ function StepCard({ step, index, result }: { step: Step; index: number; result?:
                       {curl}
                     </pre>
                     <button
-                      onClick={() => { navigator.clipboard.writeText(curl); setCurlCopied(true); setTimeout(() => setCurlCopied(false), 1500) }}
+                      onClick={() => { void copyText(curl, () => { setCurlCopied(true); setTimeout(() => setCurlCopied(false), 1500) }) }}
                       style={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', fontSize: 10, borderRadius: 4, border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: curlCopied ? 'var(--status-success)' : 'var(--text-muted)', cursor: 'pointer' }}
                     >
                       {curlCopied ? <Check size={10} /> : <Copy size={10} />} {curlCopied ? 'Copiado' : 'Copiar'}

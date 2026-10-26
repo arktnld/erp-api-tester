@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState, useEffect, useRef, useCallback, useTransition, useMemo } from 'react'
 import { getCollectionStructure, deleteCollection, importCollection, getCollectionRawJson } from '@/app/actions/collections'
 import type { CollectionStructure, FolderNode, CollectionEndpoint, FlatEndpoint, CollectionParam } from './lib/parser'
@@ -290,7 +292,8 @@ function CodeBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false)
   const isJson = code.trim().startsWith('{') || code.trim().startsWith('[')
   const copy = () => {
-    navigator.clipboard.writeText(code).then(() => {
+    copyText(code).then((copied) => {
+      if (!copied) return
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     })
@@ -495,7 +498,8 @@ function EndpointDetail({ ep }: { ep: FlatEndpoint }) {
   const curlStr = buildCurl(ep)
 
   const copyCurl = () => {
-    navigator.clipboard.writeText(curlStr).then(() => {
+    copyText(curlStr).then((copied) => {
+      if (!copied) return
       setCurlCopied(true)
       setTimeout(() => setCurlCopied(false), 1500)
     })

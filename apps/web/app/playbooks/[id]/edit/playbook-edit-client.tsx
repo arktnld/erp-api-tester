@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -175,7 +177,7 @@ export function PlaybookEditClient({ erps, playbook }: Props) {
                           key={field}
                           type="button"
                           title={`Capturado no Step ${stepNum} — clique para copiar`}
-                          onClick={() => navigator.clipboard?.writeText(`{${field}}`)}
+                          onClick={() => copyText(`{${field}}`)}
                           style={{ fontSize: 11, fontFamily: 'monospace', padding: '2px 7px', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)', color: 'var(--status-warning)', borderRadius: 4, cursor: 'pointer' }}
                         >
                           {'{'}{ field }{'}'} · Step {stepNum}

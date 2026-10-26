@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowLeft, Play, Pencil, Share2, Check, Copy } from 'lucide-react'
@@ -163,7 +165,7 @@ function StepCard({ step, index, result }: { step: Step; index: number; result?:
                       {curl}
                     </pre>
                     <button
-                      onClick={() => { navigator.clipboard.writeText(curl); setCurlCopied(true); setTimeout(() => setCurlCopied(false), 1500) }}
+                      onClick={() => { void copyText(curl, () => { setCurlCopied(true); setTimeout(() => setCurlCopied(false), 1500) }) }}
                       style={{ position: 'absolute', top: 8, right: 8, display: 'flex', alignItems: 'center', gap: 4, padding: '3px 8px', fontSize: 10, borderRadius: 4, border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: curlCopied ? 'var(--status-success)' : 'var(--text-muted)', cursor: 'pointer' }}
                     >
                       {curlCopied ? <Check size={10} /> : <Copy size={10} />} {curlCopied ? 'Copiado' : 'Copiar'}
@@ -255,15 +257,10 @@ export function PlaybookDetailClient({ playbook, companies, lastRun }: {
 
   const handleShare = () => {
     const url = `${window.location.origin}/playbooks/${playbook.id}/view`
-    navigator.clipboard?.writeText(url).catch(() => {
-      const ta = document.createElement('textarea')
-      ta.value = url; ta.style.cssText = 'position:fixed;opacity:0'
-      document.body.appendChild(ta); ta.select()
-      try { document.execCommand('copy') } catch {}
-      document.body.removeChild(ta)
+    void copyText(url, () => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
     })
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
   }
 
   const allOk = results?.every((r) => r.status === 'ok')

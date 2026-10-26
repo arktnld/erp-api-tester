@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useEffect, useRef, useState } from 'react'
 import { Layers, Building2, Users, Zap, Terminal, History, Info, Lightbulb, AlertTriangle, Link2, LucideIcon } from 'lucide-react'
 
@@ -66,8 +68,8 @@ function Code({ children }: { children: string }) {
   const [copied, setCopied] = useState(false)
   const [hovered, setHovered] = useState(false)
 
-  const copy = () => {
-    navigator.clipboard.writeText(children)
+  const copy = async () => {
+    if (!await copyText(children)) return
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -116,8 +118,8 @@ function H2({ id, children }: { id: string; children: React.ReactNode }) {
   const [hovered, setHovered] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  const copyAnchor = () => {
-    navigator.clipboard.writeText(window.location.href.split('#')[0] + '#' + id)
+  const copyAnchor = async () => {
+    if (!await copyText(window.location.href.split('#')[0] + '#' + id)) return
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }

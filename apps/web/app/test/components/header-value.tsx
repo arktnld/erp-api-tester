@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState } from 'react'
 import { ChevronRight, Copy, Check } from 'lucide-react'
 
@@ -28,7 +30,7 @@ export function HeaderValue({ value }: { value: string }) {
   const copy = async (e: React.MouseEvent) => {
     e.stopPropagation()
     try {
-      await navigator.clipboard.writeText(value)
+      if (!await copyText(value)) return
       setCopied(true)
       setTimeout(() => setCopied(false), 1200)
     } catch {

@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState } from 'react'
 import { CheckCircle2, XCircle, Clock, Building2, Server, Copy, Check } from 'lucide-react'
 import { MethodBadge, StatusBadge } from '@/components/ui/badge'
@@ -56,7 +58,7 @@ function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
   return (
     <button
-      onClick={() => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 1500) }}
+      onClick={() => { void copyText(text, () => { setCopied(true); setTimeout(() => setCopied(false), 1500) }) }}
       style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', fontSize: 11, background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 4, color: 'var(--text-muted)', cursor: 'pointer' }}
     >
       {copied ? <Check size={11} /> : <Copy size={11} />}

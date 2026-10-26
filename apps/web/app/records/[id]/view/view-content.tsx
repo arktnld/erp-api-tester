@@ -1,5 +1,7 @@
 'use client'
 
+import { copyText } from '@/lib/clipboard'
+
 import { useState } from 'react'
 import dynamic from 'next/dynamic'
 import { JsonTree } from '@/app/test/components/json-tree'
@@ -34,19 +36,6 @@ type ViewBlock = {
 
 const METHOD_COLORS: Record<string, string> = {
   GET: 'var(--status-success)', POST: 'var(--method-post)', PUT: 'var(--status-warning)', PATCH: 'var(--method-patch)', DELETE: 'var(--status-error)',
-}
-
-function fallbackCopy(text: string, cb: () => void) {
-  const ta = document.createElement('textarea')
-  ta.value = text; ta.style.cssText = 'position:fixed;opacity:0'
-  document.body.appendChild(ta); ta.select()
-  try { document.execCommand('copy') } catch {}
-  document.body.removeChild(ta); cb()
-}
-
-function copyText(text: string, cb: () => void) {
-  if (navigator.clipboard) navigator.clipboard.writeText(text).then(cb).catch(() => fallbackCopy(text, cb))
-  else fallbackCopy(text, cb)
 }
 
 function buildCurl(resp: BlockResponse): string | null {
